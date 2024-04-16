@@ -1,5 +1,7 @@
 #include "LudeoGameInstance.h"
 
+#include "Kismet/GameplayStatics.h"
+
 ULudeoGameInstance::ULudeoGameInstance() :
 	LudeoSessionHandle(nullptr)
 {
@@ -17,6 +19,9 @@ void ULudeoGameInstance::Init()
 
 	const FLudeoResult Result = LudeoManager->Initialize({});
 	check(Result.IsSuccessful());
+	
+	LudeoManager->SetLoggingCallback(nullptr);
+	LudeoManager->SetLogLevel(LudeoLogCategory::All, ELogVerbosity::NoLogging);
 
 	// Register delegate for ticker callback
 	TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &ULudeoGameInstance::NativeTick));
@@ -69,32 +74,35 @@ void ULudeoGameInstance::OnLudeoSessionDestroyed(const FLudeoResult& Result, con
 	}
 }
 
-bool ULudeoGameInstance::SetupLudeoSession
-(
-	const FLudeoSessionOnActivatedDelegate& OnSessionActivatedDelegate,
-	const FLudeoSessionOnLudeoSelectedMulticastDelegate::FDelegate& OnLudeoSelectedDelegate
-)
+void ULudeoGameInstance::OnLudeoSelected(const FLudeoSessionHandle& SessionHandle, const FString& LudeoID)
+{
+	PendingLudeoIDToLoad = LudeoID;
+
+	UGameplayStatics::OpenLevel(this, TEXT("Testing"));
+}
+
+bool ULudeoGameInstance::SetupLudeoSession(const FLudeoSessionOnActivatedDelegate& OnSessionActivatedDelegate)
 {
 	WeakLudeoManager = FLudeoManager::GetInstance();
-
+	
 	const TSharedPtr<FLudeoManager> LudeoManager = WeakLudeoManager.Pin();
 	check(LudeoManager != nullptr);;
-
+	
 	FLudeoSessionManager& SessionManager = LudeoManager->GetSessionManager();
-
+	
 	const FCreateLudeoSessionParameters CreateSessionParameters;
-
+	
 	if (FLudeoSession* Session = SessionManager.CreateSession(CreateSessionParameters))
 	{
 		LudeoSessionHandle = *Session;
 
-		Session->GetOnLudeoSelectedDelegate().Add(OnLudeoSelectedDelegate);
+		Session->GetOnLudeoSelectedDelegate().AddUObject(this, &ULudeoGameInstance::OnLudeoSelected);
 
 		FLudeoSessionActivateSessionParameters ActivateSessionParameters;
-
+		
 		GConfig->GetString(TEXT("Ludeo.SessionActivate"), TEXT("APIKey"), ActivateSessionParameters.ApiKey, GGameIni);
 		GConfig->GetBool(TEXT("Ludeo.SessionActivate"), TEXT("bResetAttributeAndAction"), ActivateSessionParameters.bResetAttributeAndAction, GGameIni);
-
+		
 		ActivateSessionParameters.GameWindowHandle = []()
 		{
 			if (GEngine != nullptr && GEngine->GameViewport != nullptr)
@@ -107,10 +115,10 @@ bool ULudeoGameInstance::SetupLudeoSession
 					}
 				}
 			}
-
+			
 			return static_cast<void*>(nullptr);
 		}();
-
+		
 		Session->Activate
 		(
 			ActivateSessionParameters,
@@ -125,15 +133,15 @@ bool ULudeoGameInstance::SetupLudeoSession
 				)
 				{
 					OnLudeoSessionActivated(Result, SessionHandle, bIsLudeoSelected);
-
+					
 					OnSessionActivatedDelegate.ExecuteIfBound(Result, SessionHandle, bIsLudeoSelected);
 				}
 			)
 		);
-
+	
 		return true;
 	}
-
+	
 	return false;
 }
 

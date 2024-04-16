@@ -74,7 +74,6 @@ private:
 	void OnLudeoPlayerBeginGameplay(const FLudeoResult& Result, const FLudeoPlayerHandle& PlayerHandle);
 	void OnLudeoPlayerAdded(const FLudeoResult& Result, const FLudeoRoomHandle& RoomHandle, const FLudeoPlayerHandle& PlayerHandle);
 	void OnLudeoRoomOpened(const FLudeoResult& Result, const FLudeoSessionHandle& SessionHandle, const FLudeoRoomHandle& RoomHandle);
-	void OnLudeoSessionActivated(const FLudeoResult& Result, const FLudeoSessionHandle& SessionHandle, const bool bIsLudeoSelected);
 	void OnGetLudeo(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle, const FLudeoHandle& InLudeoHandle);
 
 	void OnLudeoSelected(const FLudeoSessionHandle& SessionHandle, const FString& LudeoID);
@@ -84,6 +83,8 @@ private:
 	void OnLudeoRoomReady(const FLudeoSessionHandle& SessionHandle, const FLudeoRoomHandle& RoomHandle);
 
 private:
+	bool IsInGame() const;
+
 	void OpenRoom(const FString& LudeoID);
 	void CloseRoom();
 	void AddPlayer(FLudeoRoom& LudeoRoom, const int32 PlayerIndex);

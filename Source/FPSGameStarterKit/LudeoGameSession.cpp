@@ -34,14 +34,7 @@ void ALudeoGameSession::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(LudeoSessionHandle))
 	{
-		LudeoSession->GetOnLudeoSelectedDelegate().RemoveAll(this);
-
 		CloseRoom();
-	}
-	
-	if (!bIsReloadingLudeo)
-	{
-		OnSessionReady(false);
 	}
 }
 
@@ -231,38 +224,6 @@ void ALudeoGameSession::OnLudeoRoomOpened(const FLudeoResult& Result, const FLud
 	}
 }
 
-void ALudeoGameSession::OnLudeoSessionActivated
-(
-	const FLudeoResult& Result,
-	const FLudeoSessionHandle& SessionHandle,
-	const bool bIsLudeoSelected
-)
-{
-	if (Result.IsSuccessful())
-	{
-		LudeoSessionHandle = SessionHandle;
-
-		if (!bIsLudeoSelected)
-		{
-			ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
-			check(GameInstance != nullptr);
-
-			if (!GameInstance->GetPendingLudeoIDToLoad().IsEmpty())
-			{
-				OnLudeoSelected(SessionHandle, GameInstance->GetPendingLudeoIDToLoad());
-			}
-			else
-			{
-				OpenRoom(FString());
-			}
-		}
-	}
-	else
-	{
-		OnSessionReady(false);
-	}
-}
-
 void ALudeoGameSession::OnGetLudeo(const FLudeoResult& Result, const FLudeoSessionHandle&, const FLudeoHandle& InLudeoHandle)
 {
 	if (Result.IsSuccessful())
@@ -292,28 +253,15 @@ void ALudeoGameSession::OnLudeoSelected(const FLudeoSessionHandle& SessionHandle
 	ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
 	check(GameInstance != nullptr);
 
-	bIsReloadingLudeo = (LudeoRoomHandle != nullptr);
-
-	if (bIsReloadingLudeo)
+	if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
 	{
-		GameInstance->SetPendingLudeoIDToLoad(LudeoID);
+		Session->GetLudeo
+		(
+			LudeoID,
+			FLudeoSessionOnGetLudeoDelegate::CreateUObject(this, &ALudeoGameSession::OnGetLudeo)
+		);
 
-		UGameplayStatics::OpenLevel(this, *UGameplayStatics::GetCurrentLevelName(this));
-	}
-	else
-	{
-		if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
-		{
-			const FString& PendingLudeoIDToLoad = GameInstance->GetPendingLudeoIDToLoad();
-
-			Session->GetLudeo
-			(
-				(!PendingLudeoIDToLoad.IsEmpty() ? PendingLudeoIDToLoad : LudeoID),
-				FLudeoSessionOnGetLudeoDelegate::CreateUObject(this, &ALudeoGameSession::OnGetLudeo)
-			);
-
-			GameInstance->SetPendingLudeoIDToLoad({});
-		}
+		GameInstance->SetPendingLudeoIDToLoad({});
 	}
 }
 
@@ -340,6 +288,16 @@ void ALudeoGameSession::OnLudeoRoomReady(const FLudeoSessionHandle& SessionHandl
 	{
 		AllPlayerBeginGameplay();
 	}
+}
+
+bool ALudeoGameSession::IsInGame() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		return (UGameplayStatics::GetCurrentLevelName(this) != TEXT("MainMenu"));
+	}
+
+	return false;
 }
 
 void ALudeoGameSession::OpenRoom(const FString& LudeoID)
@@ -436,25 +394,22 @@ void ALudeoGameSession::HandleMatchIsWaitingToStart()
 	ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
 	check(GameInstance != nullptr);
 
-	const FLudeoSessionOnLudeoSelectedMulticastDelegate::FDelegate OnLudeoSelectedDelegate = 
-	(
-		FLudeoSessionOnLudeoSelectedMulticastDelegate::FDelegate::CreateUObject(this, &ALudeoGameSession::OnLudeoSelected)
-	);
-
 	if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(GameInstance->GetActiveSessionHandle()))
 	{
-		LudeoSession->GetOnLudeoSelectedDelegate().Add(OnLudeoSelectedDelegate);
+		LudeoSessionHandle = *LudeoSession;
 
-		OnLudeoSessionActivated(LudeoResult::Success, *LudeoSession, false);
+		if (!GameInstance->GetPendingLudeoIDToLoad().IsEmpty())
+		{
+			OnLudeoSelected(*LudeoSession, GameInstance->GetPendingLudeoIDToLoad());
+		}
+		else
+		{
+			OpenRoom(FString());
+		}
 	}
 	else
 	{
-
-		GameInstance->SetupLudeoSession
-		(
-			FLudeoSessionOnActivatedDelegate::CreateUObject(this, &ALudeoGameSession::OnLudeoSessionActivated),
-			OnLudeoSelectedDelegate
-		);
+		OnSessionReady(false);
 	}
 }
 

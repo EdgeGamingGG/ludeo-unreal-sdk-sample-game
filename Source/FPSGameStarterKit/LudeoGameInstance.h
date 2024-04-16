@@ -36,11 +36,7 @@ public:
 		return LudeoSessionHandle;
 	}
 
-	bool SetupLudeoSession
-	(
-		const FLudeoSessionOnActivatedDelegate& OnSessionActivatedDelegate,
-		const FLudeoSessionOnLudeoSelectedMulticastDelegate::FDelegate& OnLudeoSelectedDelegate
-	);
+	bool SetupLudeoSession(const FLudeoSessionOnActivatedDelegate& OnSessionActivatedDelegate);
 
 	void DestoryLudeoSession(const FOnLudeoSessionDestroyedDelegate& OnSessionDestroyedDelegate);
 
@@ -51,6 +47,8 @@ protected:
 	bool NativeTick(float DeltaSeconds);
 
 private:
+	void OnLudeoSelected(const FLudeoSessionHandle& SessionHandle, const FString& LudeoID);
+
 	void OnLudeoSessionActivated
 	(
 		const FLudeoResult& Result,

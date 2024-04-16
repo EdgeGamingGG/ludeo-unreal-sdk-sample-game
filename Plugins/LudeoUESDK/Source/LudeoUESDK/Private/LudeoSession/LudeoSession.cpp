@@ -210,6 +210,13 @@ void FLudeoSession::CloseRoom
 	ludeo_Room_Close(CloseRoomParameters.RoomHandle, &IntenralCloseRoomParams, PendingCloseRoomData, &FLudeoSession::StaticOnRoomClose);
 }
 
+FLudeoResult FLudeoSession::OpenGallery(const FLudeoSessionOpenGalleryParameters& OpenGalleryParameters) const
+{
+	const LudeoSessionOpenGalleryParams IntenralOpenGalleryParams = Ludeo::create<LudeoSessionOpenGalleryParams>();
+
+	return ludeo_Session_OpenGallery(SessionHandle, &IntenralOpenGalleryParams);
+}
+
 void FLudeoSession::SubscribeNotification()
 {
 	if (NotificationIDCollection.Num() == 0)

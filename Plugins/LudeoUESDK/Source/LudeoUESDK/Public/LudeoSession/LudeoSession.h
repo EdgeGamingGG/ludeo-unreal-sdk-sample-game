@@ -76,6 +76,8 @@ public:
 		const FLudeoSessionOnCloseRoomDelegate& OnCloseRoomDelegate = {}
 	) const;
 
+	FLudeoResult OpenGallery(const FLudeoSessionOpenGalleryParameters& OpenGalleryParameters = {}) const;
+
 	FORCEINLINE bool IsValid() const
 	{
 		return (this == FLudeoSession::GetSessionBySessionHandle(SessionHandle));

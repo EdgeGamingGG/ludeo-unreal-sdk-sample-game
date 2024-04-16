@@ -248,6 +248,12 @@ struct FLudeoSessionCloseRoomParameters
 	FLudeoRoomHandle RoomHandle;
 };
 
+USTRUCT(BlueprintType, meta = (DisplayName = "Open Gallery Parameters"))
+struct FLudeoSessionOpenGalleryParameters
+{
+	GENERATED_BODY()
+};
+
 USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Subscribe To on Ludeo Selected Notification Parameters"))
 struct FLudeoSessionSubscribeToOnLudeoSelectedNotificationParameters
 {
