@@ -40,6 +40,15 @@ USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Player End Gameplay Paramete
 struct FLudeoPlayerEndGameplayParameters
 {
 	GENERATED_BODY()
+
+	FLudeoPlayerEndGameplayParameters() :
+		bIsAbort(false)
+	{
+
+	}
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	bool bIsAbort;
 };
 
 DECLARE_DELEGATE_TwoParams

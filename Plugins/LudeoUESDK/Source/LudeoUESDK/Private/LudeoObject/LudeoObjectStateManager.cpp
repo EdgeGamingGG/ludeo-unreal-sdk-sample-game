@@ -700,43 +700,56 @@ FLudeoReadableObject::ReadableObjectMapType FLudeoObjectStateManager::CreateRest
 
 				if(const UObject* const* OuterObject = ObjectMap.FindByHash(GetTypeHash(OuterLudeoObjectHandle), OuterLudeoObjectHandle))
 				{
-					const AActor* OuterActor = Cast<AActor>(const_cast<UObject*>(*OuterObject));
-					check(OuterActor != nullptr);
-
-					if (const FLudeoSaveGameActorCompomnentData* SaveGameActorCompomnentData = FLudeoObjectStateManager::GetSaveGameActorComponentData(OuterActor->GetClass(), ObjectInformation.ObjectClass.Get(), SaveGameActorDataCollection))
+					const FLudeoSaveGameActorCompomnentData* SaveGameActorCompomnentData = [&]()
 					{
-						const FLudeoReadableObject& ReadableObject = ObjectReadableObjectMap.FindChecked(OuterActor);
-
-						const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
-
-						for (TFieldIterator<FObjectProperty> PropertyIterator(OuterActor->GetClass()); PropertyIterator; ++PropertyIterator)
+						if(const AActor* OuterActor = Cast<AActor>(const_cast<UObject*>(*OuterObject)))
 						{
-							FObjectProperty* ObjectProperty = *PropertyIterator;
-							check(ObjectProperty != nullptr);
-
-							if (ObjectInformation.ObjectClass->IsChildOf(ObjectProperty->PropertyClass))
+							if (ObjectInformation.ObjectClass != nullptr && ObjectInformation.ObjectClass->IsChildOf(UActorComponent::StaticClass()))
 							{
-								FLudeoObjectHandle LudeoObjectHandle;
-								bHasReadSuccessfully = ReadableObject.ReadData(*ObjectProperty->GetName(), LudeoObjectHandle);
-								check(bHasReadSuccessfully);
+								return FLudeoObjectStateManager::GetSaveGameActorComponentData(OuterActor->GetClass(), ObjectInformation.ObjectClass.Get(), SaveGameActorDataCollection);
+							}
+						}
 
-								if (LudeoObjectHandle == static_cast<FLudeoObjectHandle>(ObjectInformation.ReadableObject))
+						return static_cast<const FLudeoSaveGameActorCompomnentData*>(nullptr);
+					}();
+
+					if (SaveGameActorCompomnentData != nullptr)
+					{
+						const AActor* OuterActor = Cast<AActor>(const_cast<UObject*>(*OuterObject));
+
+						if (SaveGameActorCompomnentData->Strategy == ELudeoSaveGameStrategy::Purge)
+						{
+							return NewObject<UObject>(const_cast<AActor*>(OuterActor), ObjectInformation.ObjectClass);
+						}
+						else if (SaveGameActorCompomnentData->Strategy == ELudeoSaveGameStrategy::Reconcile)
+						{
+							const FLudeoReadableObject& ReadableObject = ObjectReadableObjectMap.FindChecked(OuterActor);
+
+							const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
+
+							for (TFieldIterator<FObjectProperty> PropertyIterator(OuterActor->GetClass()); PropertyIterator; ++PropertyIterator)
+							{
+								FObjectProperty* ObjectProperty = *PropertyIterator;
+								check(ObjectProperty != nullptr);
+
+								if(ObjectProperty->PropertyClass->IsChildOf(UActorComponent::StaticClass()))
 								{
-									if (SaveGameActorCompomnentData->Strategy == ELudeoSaveGameStrategy::Reconcile)
+									FLudeoObjectHandle LudeoObjectHandle;
+								
+									if (ReadableObject.ReadData(*ObjectProperty->GetName(), LudeoObjectHandle))
 									{
-										UObject* Object = ObjectProperty->GetObjectPropertyValue_InContainer(OuterActor);
-										check(Object != nullptr);
+										if (LudeoObjectHandle == static_cast<FLudeoObjectHandle>(ObjectInformation.ReadableObject))
+										{
+											UObject* Object = ObjectProperty->GetObjectPropertyValue_InContainer(OuterActor);
+											check(Object != nullptr);
 
-										return Object;
-									}
-									else if (SaveGameActorCompomnentData->Strategy == ELudeoSaveGameStrategy::Purge)
-									{
-										return NewObject<UObject>(const_cast<AActor*>(OuterActor), ObjectInformation.ObjectClass);
+											return Object;
+										}
 									}
 								}
 							}
 						}
-
+						
 						check(false);
 					}
 					else

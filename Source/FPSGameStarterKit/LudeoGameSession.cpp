@@ -12,8 +12,7 @@
 ALudeoGameSession::ALudeoGameSession() :
 	Super(),
 	bIsLudeoGameSessionReady(false),
-	PendingNumberOfPlayerAdded(0),
-	bIsReloadingLudeo(false)
+	PendingNumberOfPlayerAdded(0)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
@@ -32,10 +31,7 @@ void ALudeoGameSession::Tick(float)
 
 void ALudeoGameSession::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(LudeoSessionHandle))
-	{
-		CloseRoom();
-	}
+	CloseRoom();
 }
 
 FLudeoSessionHandle ALudeoGameSession::GetActiveLudeoSessionHandle() const

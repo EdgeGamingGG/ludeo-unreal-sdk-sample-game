@@ -48,15 +48,6 @@ FLudeoPlayer::FLudeoPlayer(const FLudeoPlayerHandle& InPlayerHandle) :
 
 FLudeoPlayer::~FLudeoPlayer()
 {
-	if(PlayerHandle != nullptr)
-	{
-		LudeoGameplaySessionEndParams GameplaySessionEndParams = Ludeo::create<LudeoGameplaySessionEndParams>();
-
-		ludeo_GameplaySession_End(PlayerHandle, &GameplaySessionEndParams, nullptr, [](const LudeoGameplaySessionEndCallbackParams*)
-		{
-
-		});
-	}
 }
 
 const FLudeoPlayer* FLudeoPlayer::GetPlayerByPlayerHandle(const FLudeoPlayerHandle& PlayerHandle)

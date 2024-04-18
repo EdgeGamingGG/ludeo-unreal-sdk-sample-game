@@ -36,9 +36,9 @@ public:
 		return LudeoSessionHandle;
 	}
 
-	bool SetupLudeoSession(const FLudeoSessionOnActivatedDelegate& OnSessionActivatedDelegate);
+	bool SetupLudeoSession(const FLudeoSessionOnActivatedDelegate& OnSessionActivatedDelegate = FLudeoSessionOnActivatedDelegate());
 
-	void DestoryLudeoSession(const FOnLudeoSessionDestroyedDelegate& OnSessionDestroyedDelegate);
+	void DestoryLudeoSession(const FOnLudeoSessionDestroyedDelegate& OnSessionDestroyedDelegate = FOnLudeoSessionDestroyedDelegate());
 
 protected:
 	UFUNCTION(BlueprintImplementableEvent)

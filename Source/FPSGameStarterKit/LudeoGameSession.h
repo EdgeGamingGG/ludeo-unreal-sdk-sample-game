@@ -106,6 +106,4 @@ private:
 	
 	FLudeoObjectStateManager::PlayerMapType LudeoPlayerMap;
 	int32 PendingNumberOfPlayerAdded;
-
-	bool bIsReloadingLudeo;
 };
