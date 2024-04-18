@@ -31,6 +31,17 @@ void ALudeoGameSession::Tick(float)
 
 void ALudeoGameSession::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	for (FLudeoObjectStateManager::PlayerMapType::TConstIterator Itr = LudeoPlayerMap.CreateConstIterator(); Itr; ++Itr)
+	{
+		if(const FLudeoPlayer* LudeoPlayer = FLudeoPlayer::GetPlayerByPlayerHandle(Itr->Value))
+		{
+			FLudeoPlayerEndGameplayParameters EndGameplayParameters;
+			EndGameplayParameters.bIsAbort = true;
+
+			LudeoPlayer->EndGameplay(EndGameplayParameters);
+		}
+	}
+
 	CloseRoom();
 }
 

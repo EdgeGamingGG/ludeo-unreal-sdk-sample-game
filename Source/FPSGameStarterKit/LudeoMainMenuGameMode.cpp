@@ -32,31 +32,36 @@ void ALudeoMainMenuGameMode::HandleMatchIsWaitingToStart()
 	ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
 	check(GameInstance != nullptr);
 
-	GameInstance->DestoryLudeoSession();
-
-	GameInstance->SetupLudeoSession
-	(
-		FLudeoSessionOnActivatedDelegate::CreateWeakLambda
+	if (GameInstance->GetActiveSessionHandle() == nullptr)
+	{
+		GameInstance->SetupLudeoSession
 		(
-			this,
-			[this]
+			FLudeoSessionOnActivatedDelegate::CreateWeakLambda
 			(
-				const FLudeoResult& Result,
-				const FLudeoSessionHandle& SessionHandle,
-				const bool
+				this,
+				[this]
+				(
+					const FLudeoResult& Result,
+					const FLudeoSessionHandle& SessionHandle,
+					const bool
+				)
+				{
+					if(Result.IsSuccessful())
+					{
+						SessionSetupResult.Emplace(SessionHandle);
+					}
+					else
+					{
+						SessionSetupResult.Emplace(nullptr);
+					}
+				}
 			)
-			{
-				if(Result.IsSuccessful())
-				{
-					SessionSetupResult.Emplace(SessionHandle);
-				}
-				else
-				{
-					SessionSetupResult.Emplace(nullptr);
-				}
-			}
-		)
-	);
+		);
+	}
+	else
+	{
+		SessionSetupResult.Emplace(GameInstance->GetActiveSessionHandle());
+	}
 }
 
 void ALudeoMainMenuGameMode::HandleMatchHasStarted()

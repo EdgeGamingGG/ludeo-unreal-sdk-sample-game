@@ -19,11 +19,6 @@ void ULudeoGameInstance::Init()
 
 	const FLudeoResult Result = LudeoManager->Initialize({});
 	check(Result.IsSuccessful());
-	
-/*
-	LudeoManager->SetLoggingCallback(nullptr);
-	LudeoManager->SetLogLevel(LudeoLogCategory::All, ELogVerbosity::NoLogging);
-*/
 
 	// Register delegate for ticker callback
 	TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &ULudeoGameInstance::NativeTick));
