@@ -1,4 +1,6 @@
 #include "LudeoGameMode.h"
+#include "LudeoGameState.h"
+#include "LudeoPlayerController.h"
 
 #include "GameFramework/GameSession.h"
 
@@ -12,14 +14,9 @@ void ALudeoGameMode::HandleMatchIsWaitingToStart()
 
 void ALudeoGameMode::HandleMatchHasStarted()
 {
-	// start human players first
-	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	if (ALudeoGameState* LudeoGameState = GetGameState<ALudeoGameState>())
 	{
-		APlayerController* PlayerController = Iterator->Get();
-		if (PlayerController && (PlayerController->GetPawn() == nullptr) && PlayerCanRestart(PlayerController))
-		{
-			RestartPlayer(PlayerController);
-		}
+		LudeoGameState->ConditionalLoadLudeo();
 	}
 
 	Super::HandleMatchHasStarted();
@@ -27,10 +24,22 @@ void ALudeoGameMode::HandleMatchHasStarted()
 
 bool ALudeoGameMode::ReadyToStartMatch_Implementation()
 {
-	if (ALudeoGameSession* LudeoGameSession = Cast<ALudeoGameSession>(GameSession))
+	UWorld* World = GetWorld();
+	check(World != nullptr)
+
+	bool bIsReadyToStartMatch = Super::ReadyToStartMatch_Implementation();
+
+	for (
+		FConstPlayerControllerIterator Itr = World->GetPlayerControllerIterator();
+		Itr&& bIsReadyToStartMatch;
+		++Itr
+	)
 	{
-		return LudeoGameSession->IsSessionReady();
+		if (ALudeoPlayerController* PlayerController = Cast<ALudeoPlayerController>(Itr->Get()))
+		{
+			bIsReadyToStartMatch = bIsReadyToStartMatch && PlayerController->IsPlayerReady();
+		}
 	}
-	
-	return false;
+
+	return bIsReadyToStartMatch;
 }

@@ -64,22 +64,6 @@ void ALudeoMainMenuGameMode::HandleMatchIsWaitingToStart()
 	}
 }
 
-void ALudeoMainMenuGameMode::HandleMatchHasStarted()
-{
-	// start human players first
-	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
-	{
-		APlayerController* PlayerController = Iterator->Get();
-		if (PlayerController && (PlayerController->GetPawn() == nullptr) && PlayerCanRestart(PlayerController))
-		{
-			RestartPlayer(PlayerController);
-		}
-	}
-
-	Super::HandleMatchHasStarted();
-}
-
-
 bool ALudeoMainMenuGameMode::ReadyToStartMatch_Implementation()
 {
 	return SessionSetupResult.IsSet();

@@ -2,7 +2,7 @@
 
 #include "GameFramework/GameMode.h"
 
-#include "LudeoSession/LudeoSessionTypes.h"
+#include "LudeoUESDK/LudeoSession/LudeoSessionTypes.h"
 
 #include "LudeoMainMenuGameMode.generated.h"
 
@@ -20,7 +20,6 @@ public:
 
 private:
 	virtual void HandleMatchIsWaitingToStart() override;
-	virtual void HandleMatchHasStarted() override;
 	virtual bool ReadyToStartMatch_Implementation() override;
 
 private:

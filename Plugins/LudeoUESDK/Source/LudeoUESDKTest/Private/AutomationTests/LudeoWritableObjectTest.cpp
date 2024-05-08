@@ -145,6 +145,14 @@ bool FLudeoWritableObjectBindPlayerTest::RunTest(const FString& Parameters)
 	(
 		SETUP_DETOUR_FUNCTION
 		(
+			ludeo_DataWriter_SetCurrent,
+			[](...)
+			{
+				return LudeoResult::Success;
+			}
+		),
+		SETUP_DETOUR_FUNCTION
+		(
 			ludeo_DataWriter_SetPlayerBinding,
 			[](...)
 			{
@@ -157,7 +165,7 @@ bool FLudeoWritableObjectBindPlayerTest::RunTest(const FString& Parameters)
 	{
 		const FLudeoWritableObject WritableObject(nullptr, LUDEO_INVALID_OBJECTID, nullptr);
 		
-		TestTrue(TEXT("Bind Player"), WritableObject.BindPlayer(FLudeoPlayer(nullptr)));
+		TestTrue(TEXT("Bind Player"), WritableObject.BindPlayer(TEXT("Bad Beef")));
 	}
 
 	return (DetourFunction.IsDetoured() && !HasAnyErrors());

@@ -9,7 +9,7 @@
 #include <Ludeo/DataReader.h>
 #include <Ludeo/DataWriter.h>
 
-#include "LudeoAllTypes.h"
+#include "LudeoUESDK/LudeoAllTypes.h"
 
 #undef ensure
 

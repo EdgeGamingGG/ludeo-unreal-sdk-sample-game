@@ -2,7 +2,7 @@
 
 #include "Engine/GameInstance.h"
 
-#include "LudeoManager/LudeoManager.h"
+#include "LudeoUESDK/LudeoManager/LudeoManager.h"
 
 #include "LudeoGameInstance.generated.h"
 
@@ -11,8 +11,8 @@ class ULudeoGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 
-	UPROPERTY(Transient, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	FString PendingLudeoIDToLoad;
+	UPROPERTY(EditDefaultsOnly, meta = (AllowedClasses = "World"))
+	FSoftObjectPath MainMenuPath;
 
 public:
 	ULudeoGameInstance();
@@ -21,20 +21,24 @@ public:
 
 	virtual void Shutdown() override;
 
-	const FString& GetPendingLudeoIDToLoad() const
-	{
-		return PendingLudeoIDToLoad;
-	}
+	UFUNCTION(BlueprintCallable)
+	void LoadLudeo(const FString& LudeoID);
 
-	void SetPendingLudeoIDToLoad(const FString& LudeoID)
-	{
-		PendingLudeoIDToLoad = LudeoID;
-	}
+	UFUNCTION(BlueprintCallable)
+	void LoadMainMenu();
 
 	const FLudeoSessionHandle& GetActiveSessionHandle() const
 	{
-		return LudeoSessionHandle;
+		return ActiveLudeoSessionHandle;
 	}
+
+	const FLudeoHandle& GetPendingLudeoHandle() const
+	{
+		return PendingLudeoHandle;
+	}
+
+	void MarkLudeoAsPending(const FLudeo& Ludeo);
+	bool ReleasePendingLudeo();
 
 	bool SetupLudeoSession(const FLudeoSessionOnActivatedDelegate& OnSessionActivatedDelegate = FLudeoSessionOnActivatedDelegate());
 
@@ -47,16 +51,25 @@ protected:
 	bool NativeTick(float DeltaSeconds);
 
 private:
+	FString GetLudeoMapName(const FLudeo& Ludeo) const;
+	void OnGetLudeo(const FLudeoResult& Result, const FLudeoSessionHandle& SessionHandle, const FLudeoHandle& LudeoHandle);
 	void OnLudeoSelected(const FLudeoSessionHandle& SessionHandle, const FString& LudeoID);
+	void OnPauseGameRequested(const FLudeoSessionHandle& SessionHandle);
+	void OnResumeGameRequested(const FLudeoSessionHandle& SessionHandle);
+	void OnGameBackToMainMenuRequested(const FLudeoSessionHandle& SessionHandle);
 
 	void OnLudeoSessionActivated
 	(
 		const FLudeoResult& Result,
 		const FLudeoSessionHandle& SessionHandle,
-		const bool bIsLudeoSelected
+		const bool bIsLudeoSelected,
+		const FLudeoSessionOnActivatedDelegate OnSessionActivatedDelegate
 	);
 
 	void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& SessionHandle);
+
+private:
+	int32 GameInstanceRegistrationID;
 
 private:
 	TWeakPtr<FLudeoManager> WeakLudeoManager;
@@ -65,6 +78,7 @@ private:
 	FDelegateHandle TickDelegateHandle;
 
 private:
-	FLudeoSessionHandle LudeoSessionHandle;
+	FLudeoSessionHandle ActiveLudeoSessionHandle;
+	FLudeoHandle PendingLudeoHandle;
 };
 
