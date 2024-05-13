@@ -32,7 +32,7 @@ bool FLudeoReadableObjectEnterObjectTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoReadableObject ReadableObject(LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoReadableObject ReadableObject(0xBadBeef, reinterpret_cast<LudeoHDataReader>(0xBadBeef));
 
 		TestTrue(TEXT("Enter object"), ReadableObject.EnterObject());
 	}
@@ -64,7 +64,7 @@ bool FLudeoReadableObjectLeaveObjectTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoReadableObject ReadableObject(LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoReadableObject ReadableObject(0xBadBeef, reinterpret_cast<LudeoHDataReader>(0xBadBeef));
 
 		TestTrue(TEXT("Leave object"), ReadableObject.LeaveObject());
 	}
@@ -96,7 +96,7 @@ bool FLudeoReadableObjectEnterComponentTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoReadableObject ReadableObject(LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoReadableObject ReadableObject(0xBadBeef, reinterpret_cast<LudeoHDataReader>(0xBadBeef));
 
 		TestTrue(TEXT("Leave object"), ReadableObject.EnterComponent({}));
 	}
@@ -128,7 +128,7 @@ bool FLudeoReadableObjectLeaveComponentTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoReadableObject ReadableObject(LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoReadableObject ReadableObject(0xBadBeef, reinterpret_cast<LudeoHDataReader>(0xBadBeef));
 
 		TestTrue(TEXT("Leave object"), ReadableObject.LeaveComponent());
 	}
@@ -307,7 +307,7 @@ bool FLudeoReadableObjectReadDataTest::RunTest(const FString& Parameters)
 
 		char DataBuffer[64];
 
-		const FLudeoReadableObject ReadableObject(LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoReadableObject ReadableObject(0xBadBeef, reinterpret_cast<LudeoHDataReader>(0xBadBeef));
 
 		TestTrue(TEXT("Get Int8 Data"),					ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<int8&>(DataBuffer[0])));
 		TestTrue(TEXT("Get Int16 Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<int16&>(DataBuffer[0])));

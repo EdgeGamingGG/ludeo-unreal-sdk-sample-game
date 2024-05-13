@@ -6,6 +6,7 @@
 #include "LudeoUESDK/LudeoSession/LudeoSessionManager.h"
 #include "LudeoUESDK/LudeoLog/LudeoLog.h"
 
+/* Ludeo manager, an entry point of the plugin */
 class LUDEOUESDK_API FLudeoManager
 {
 public:

@@ -10,13 +10,32 @@
 class LUDEOUESDK_API FLudeoObjectStateManager
 {
 public:
-	typedef TMap<const APlayerState*, FLudeoPlayerHandle> PlayerMapType;
-
 	virtual ~FLudeoObjectStateManager()
 	{
 
 	}
 
+	// Saving state of objects of the world associated with the WorldContextObject
+	static bool SaveWorld
+	(
+		const UObject* WorldContextObject,
+		const TOptional<FString> LudeoCreatorPlayerID,
+		const FLudeoRoom& LudeoRoom,
+		const FLudeoSaveGameSpecification& SaveGameSpecification,
+		FLudeoWritableObject::WritableObjectMapType& ObjectMap
+	);
+
+	// Restore the state the world using the object information in the Ludeo
+	static bool RestoreWorld
+	(
+		const UObject* WorldContextObject,
+		const TArray<FLudeoObjectInformation>& ObjectInformationCollection,
+		const TArray<TSubclassOf<UObject>>& ObjectClassCollection,
+		const FLudeoSaveGameSpecification& SaveGameSpecification,
+		const FLudeoReadableObject::ReadableObjectMapType& InputObjectMap = {}
+	);
+
+private:
 	static const FLudeoWritableObject* CreateWritableObject
 	(
 		const FLudeoRoom& LudeoRoom,
@@ -31,19 +50,12 @@ public:
 		FLudeoWritableObject::WritableObjectMapType& ObjectMap
 	);
 
-	static bool TickSaveObjectState
+	static void CreateSaveWorldObjectMap
 	(
 		const UObject* WorldContextObject,
-		const TOptional<FString> LudeoCreatorPlayerID,
 		const FLudeoRoom& LudeoRoom,
 		const FLudeoSaveGameSpecification& SaveGameSpecification,
-		FLudeoWritableObject::WritableObjectMapType& ObjectMap
-	);
-
-	static bool RestoreWorld
-	(
-		const FLudeoSaveGameSpecification& SaveGameSpecification,
-		const FLudeoReadableObject::ReadableObjectMapType& ObjectMap
+		FLudeoWritableObject::WritableObjectMapType& OutTrackedLudeoObjectMap
 	);
 
 	static bool CreateRestoreWorldObjectMap
@@ -55,25 +67,24 @@ public:
 		FLudeoReadableObject::ReadableObjectMapType& ObjectMap
 	);
 
-private:
+	static bool IsTargetObjectToBeSaved(const UObject* WorldContextObject, const UObject* Object);
+
+	static TSet<const UObject*> GetObjectToBeSavedSet
+	(
+		const UObject* WorldContextObject,
+		const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection
+	);
+
+	static void FindObjectToBeSavedFromProperty
+	(
+		const UObject* WorldContextObject,
+		const UStruct* StructureType,
+		const void* MemoryAddress,
+		TSet<const UObject*>& ObjectSet,
+		TSet<const UObject*>& HasVisitedObjectSet
+	);
+
 	static const APlayerState* GetObjectAssociatedPlayerState(const UObject* Object);
-
-	static bool SaveWorld
-	(
-		const UObject* WorldContextObject,
-		const TOptional<FString> LudeoCreatorPlayerID,
-		const FLudeoRoom& LudeoRoom,
-		const FLudeoSaveGameSpecification& SaveGameSpecification,
-		const FLudeoWritableObject::WritableObjectMapType& ObjectMap
-	);
-
-	static void CreateSaveWorldObjectMap
-	(
-		const UObject* WorldContextObject,
-		const FLudeoRoom& LudeoRoom,
-		const FLudeoSaveGameSpecification& SaveGameSpecification,
-		FLudeoWritableObject::WritableObjectMapType& OutTrackedLudeoObjectMap
-	);
 
 	static TMap<TSubclassOf<AActor>, TArray<const AActor*>> GetActorClassMap(const UWorld* World);
 
@@ -94,22 +105,5 @@ private:
 		const TSubclassOf<AActor>& OuterActorClass,
 		const TSubclassOf<UActorComponent>& ActorComponentClass,
 		const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection
-	);
-
-	static bool IsTargetObjectToBeSaved(const UObject* WorldContextObject, const UObject* Object);
-
-	static TSet<const UObject*> GetObjectToBeSavedSet
-	(
-		const UObject* WorldContextObject,
-		const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection
-	);
-
-	static void FindObjectToBeSavedFromProperty
-	(
-		const UObject* WorldContextObject,
-		const UStruct* StructureType,
-		const void* MemoryAddress,
-		TSet<const UObject*>& ObjectSet,
-		TSet<const UObject*>& HasVisitedObjectSet
 	);
 };

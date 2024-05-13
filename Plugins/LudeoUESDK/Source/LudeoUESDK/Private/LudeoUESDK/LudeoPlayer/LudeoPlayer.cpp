@@ -23,26 +23,25 @@ struct FLudeoPlayerPendingEndGameplayData : public FLudeoPlayerPendingData
 FLudeoPlayer::FLudeoPlayer(const FLudeoPlayerHandle& InPlayerHandle) :
 	PlayerHandle(InPlayerHandle)
 {
-	if(PlayerHandle != nullptr)
+	check(PlayerHandle != nullptr);
+	
+	LudeoGameplaySessionInfo* GameplaySessionInformation;
+
+	LudeoGameplaySessionGetInfoParams InternalGetGameplaySessionInformationParams = Ludeo::create<LudeoGameplaySessionGetInfoParams>();
+
+	const FLudeoResult Result = ludeo_GameplaySession_GetInfo
+	(
+		PlayerHandle,
+		&InternalGetGameplaySessionInformationParams,
+		&GameplaySessionInformation
+	);
+	check(Result.IsSuccessful());
+
+	if (Result.IsSuccessful())
 	{
-		LudeoGameplaySessionInfo* GameplaySessionInformation;
+		PlayerID = UTF8_TO_TCHAR(GameplaySessionInformation->playerId);
 
-		LudeoGameplaySessionGetInfoParams InternalGetGameplaySessionInformationParams = Ludeo::create<LudeoGameplaySessionGetInfoParams>();
-
-		const FLudeoResult Result = ludeo_GameplaySession_GetInfo
-		(
-			PlayerHandle,
-			&InternalGetGameplaySessionInformationParams,
-			&GameplaySessionInformation
-		);
-		check(Result.IsSuccessful());
-
-		if (Result.IsSuccessful())
-		{
-			PlayerID = UTF8_TO_TCHAR(GameplaySessionInformation->playerId);
-
-			ludeo_GameplaySessionInfo_Release(GameplaySessionInformation);
-		}
+		ludeo_GameplaySessionInfo_Release(GameplaySessionInformation);
 	}
 }
 

@@ -51,6 +51,13 @@ FLudeoWritableObject::FLudeoWritableObject(const UObject* Object, const FLudeoOb
 	RoomWriterHandle(InRoomWriterHandle),
 	WeakObject(Object)
 {
+	check(IsValid());
+	check(GetObject() != nullptr);
+	check(RoomWriterHandle != nullptr);
+}
+
+FLudeoWritableObject::~FLudeoWritableObject()
+{
 
 }
 
@@ -83,13 +90,13 @@ bool FLudeoWritableObject::LeaveObject() const
 	return false;
 }
 
-bool FLudeoWritableObject::EnterComponent(const FString& AttributeName) const
+bool FLudeoWritableObject::EnterComponent(const TCHAR* AttributeName) const
 {
 	const FLudeoResult Result = ConditionalRoomWriterSetCurrent(RoomWriterHandle);
 
 	if (Result.IsSuccessful())
 	{
-		return (ludeo_DataWriter_EnterComponent(TCHAR_TO_UTF8(AttributeName.GetCharArray().GetData())) == LUDEO_TRUE);
+		return (ludeo_DataWriter_EnterComponent(TCHAR_TO_UTF8(AttributeName)) == LUDEO_TRUE);
 	}
 
 	return false;
@@ -107,13 +114,13 @@ bool FLudeoWritableObject::LeaveComponent() const
 	return false;
 }
 
-bool FLudeoWritableObject::BindPlayer(const FString& PlayerID) const
+bool FLudeoWritableObject::BindPlayer(const TCHAR* PlayerID) const
 {
 	const FLudeoResult Result = ConditionalRoomWriterSetCurrent(RoomWriterHandle);
 
 	if (Result.IsSuccessful())
 	{
-		return (ludeo_DataWriter_SetPlayerBinding(TCHAR_TO_UTF8(PlayerID.GetCharArray().GetData())) == LUDEO_TRUE);
+		return (ludeo_DataWriter_SetPlayerBinding(TCHAR_TO_UTF8(PlayerID)) == LUDEO_TRUE);
 	}
 
 	return false;

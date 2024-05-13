@@ -8,6 +8,7 @@
 
 class APlayerState;
 
+/* A data writer for writing states for the mapped UObject */
 class LUDEOUESDK_API FLudeoWritableObject : public FLudeoObject
 {
 public:
@@ -15,18 +16,27 @@ public:
 
 public:
 	FLudeoWritableObject(const UObject* Object, const FLudeoObjectHandle& InObjectHandle, const FLudeoRoomWriterHandle& InDataWriterHandle);
+	~FLudeoWritableObject();
 
-	~FLudeoWritableObject() = default;
-
+	/* Get the UObject mapped to this writable object from its internal weak pointer */
 	const UObject* GetObject() const;
 
+	/* Pushes the current object to the DataWriter context stack */
 	bool EnterObject() const;
+
+	/* Pop the object from the DataWriter context stack */
 	bool LeaveObject() const;
 
-	bool EnterComponent(const FString& AttributeName) const;
+	/* Pushes the struct associated with the AttributeName to the DataWriter context stack */
+	bool EnterComponent(const TCHAR* AttributeName) const;
+
+	/* Pop the struct from the DataWriter context stack */
 	bool LeaveComponent() const;
 
-	bool BindPlayer(const FString& PlayerID) const;
+	/* Bind the current object to a player */
+	bool BindPlayer(const TCHAR* PlayerID) const;
+
+	/* Unbind the object to a player */
 	bool UnbindPlayer() const;
 
 	bool WriteData

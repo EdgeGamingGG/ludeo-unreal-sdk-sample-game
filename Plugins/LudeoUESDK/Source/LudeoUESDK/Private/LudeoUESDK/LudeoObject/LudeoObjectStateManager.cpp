@@ -8,143 +8,6 @@
 #include "LudeoUESDK/LudeoScopedGuard.h"
 #include "LudeoUESDK/LudeoRoom/LudeoRoom.h"
 
-bool FLudeoObjectStateManager::IsTargetObjectToBeSaved(const UObject* WorldContextObject, const UObject* Object)
-{
-	check(WorldContextObject != nullptr);
-
-	return
-	(
-		(Object != nullptr) &&
-		(Object->GetWorld() == WorldContextObject->GetWorld()) &&
-		!Object->IsPendingKillOrUnreachable() &&
-		!Object->HasAnyFlags(RF_ClassDefaultObject) &&
-		(Object->GetOutermost() != GetTransientPackage())
-	);
-}
-
-void FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
-(
-	const UObject* WorldContextObject,
-	const UStruct* StructureType,
-	const void* MemoryAddress,
-	TSet<const UObject*>& ObjectSet,
-	TSet<const UObject*>& HasVisitedObjectSet
-)
-{
-	for (TFieldIterator<FProperty> PropertyIterator(StructureType); PropertyIterator; ++PropertyIterator)
-	{
-		FProperty* Property = *PropertyIterator;
-		check(Property != nullptr);
-
-		if (Property->HasAllPropertyFlags(EPropertyFlags::CPF_SaveGame))
-		{
-			if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
-			{
-				FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
-				(
-					WorldContextObject,
-					StructProperty->Struct,
-					StructProperty->ContainerPtrToValuePtr<void>(MemoryAddress),
-					ObjectSet,
-					HasVisitedObjectSet
-				);
-			}
-			else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
-			{
-				const UObject* Object = ObjectProperty->GetObjectPropertyValue(ObjectProperty->ContainerPtrToValuePtr<void>(MemoryAddress));
-
-				if (Object != nullptr)
-				{
-					if (!HasVisitedObjectSet.Contains(Object))
-					{
-						HasVisitedObjectSet.Add(Object);
-
-						if (FLudeoObjectStateManager::IsTargetObjectToBeSaved(WorldContextObject, Object))
-						{
-							ObjectSet.Add(Object);
-						}
-
-						FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
-						(
-							WorldContextObject,
-							Object->GetClass(),
-							Object,
-							ObjectSet,
-							HasVisitedObjectSet
-						);
-					}
-				}
-			}
-		}
-	}
-}
-
-TSet<const UObject*> FLudeoObjectStateManager::GetObjectToBeSavedSet
-(
-	const UObject* WorldContextObject,
-	const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection
-)
-{
-	check(WorldContextObject != nullptr);
-
-	UWorld* World = WorldContextObject->GetWorld();
-	check(World != nullptr);
-
-	TSet<const UObject*> ObjectSet;
-	TSet<const UObject*> HasVisitedObjectSet;
-
-	for (FActorIterator ActorItr(World); ActorItr; ++ActorItr)
-	{
-		AActor* Actor = *ActorItr;
-		check(Actor != nullptr);
-
-		if (ULevel* Outer = Cast<ULevel>(Actor->GetOuter()))
-		{
-			if(FLudeoObjectStateManager::IsTargetObjectToBeSaved(World, Actor))
-			{
-				if (const FLudeoSaveGameActorData* SaveGameActorData = FLudeoObjectStateManager::GetSaveGameActorData(Actor->GetClass(), SaveGameActorDataCollection))
-				{
-					// Actor
-					if(SaveGameActorData->Strategy == ELudeoSaveGameStrategy::Purge || SaveGameActorData->Strategy == ELudeoSaveGameStrategy::Reconcile)
-					{
-						HasVisitedObjectSet.Add(Actor);
-						ObjectSet.Add(Actor);
-
-						FLudeoObjectStateManager::FindObjectToBeSavedFromProperty(World, Actor->GetClass(), Actor, ObjectSet, HasVisitedObjectSet);
-					}
-
-					if(SaveGameActorData->SaveGameActorComponentDataCollection.Num() > 0)
-					{
-						for (TFieldIterator<FObjectProperty> PropertyIterator(Actor->GetClass()); PropertyIterator; ++PropertyIterator)
-						{
-							FObjectProperty* ObjectProperty = *PropertyIterator;
-							check(ObjectProperty != nullptr);
-
-							const UActorComponent* ActorComponent = Cast<UActorComponent>(ObjectProperty->GetObjectPropertyValue(ObjectProperty->ContainerPtrToValuePtr<void>(Actor)));
-
-							if(ActorComponent != nullptr)
-							{
-								if (const FLudeoSaveGameActorCompomnentData* SaveGameActorCompomnentData = FLudeoObjectStateManager::GetSaveGameActorComponentData(ActorComponent->GetClass(), SaveGameActorData->SaveGameActorComponentDataCollection))
-								{
-									if (SaveGameActorCompomnentData->Strategy == ELudeoSaveGameStrategy::Purge || SaveGameActorCompomnentData->Strategy == ELudeoSaveGameStrategy::Reconcile)
-									{
-										HasVisitedObjectSet.Add(ActorComponent);
-										ObjectSet.Add(ActorComponent);
-
-										FLudeoObjectStateManager::FindObjectToBeSavedFromProperty(World, ActorComponent->GetClass(), ActorComponent, ObjectSet, HasVisitedObjectSet);
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return ObjectSet;
-}
-
 const FLudeoWritableObject* FLudeoObjectStateManager::CreateWritableObject
 (
 	const FLudeoRoom& LudeoRoom,
@@ -185,214 +48,6 @@ bool FLudeoObjectStateManager::DestroyWritableObject
 	}
 
 	return Result.IsSuccessful();
-}
-
-bool FLudeoObjectStateManager::TickSaveObjectState
-(
-	const UObject* WorldContextObject,
-	const TOptional<FString> LudeoCreatorPlayerID,
-	const FLudeoRoom& LudeoRoom,
-	const FLudeoSaveGameSpecification& SaveGameSpecification,
-	FLudeoWritableObject::WritableObjectMapType& ObjectMap
-)
-{
-	check(WorldContextObject != nullptr);
-
-	if(WorldContextObject != nullptr)
-	{
-		FLudeoObjectStateManager::CreateSaveWorldObjectMap(WorldContextObject, LudeoRoom, SaveGameSpecification, ObjectMap);
-
-		return FLudeoObjectStateManager::SaveWorld
-		(
-			WorldContextObject,
-			LudeoCreatorPlayerID,
-			LudeoRoom,
-			SaveGameSpecification,
-			ObjectMap
-		);
-	}
-
-	return false;
-}
-
-const APlayerState* FLudeoObjectStateManager::GetObjectAssociatedPlayerState(const UObject* Object)
-{
-	check(Object != nullptr);
-
-	if (const AActor* Actor = Cast<const AActor>(Object))
-	{
-		if (const APlayerController* PlayerControllerActor = Cast<const APlayerController>(Object))
-		{
-			return Cast<const APlayerState>(PlayerControllerActor->PlayerState);
-		}
-		else if (const APlayerState* PlayerStateActor = Cast<const APlayerState>(Object))
-		{
-			return PlayerStateActor;
-		}
-		else
-		{
-			if (APlayerController* OwnedByPlayerControllerActor = Cast<APlayerController>(Actor->GetOwner()))
-			{
-				return Cast<const APlayerState>(OwnedByPlayerControllerActor->PlayerState);
-			}
-			else if (const APlayerState* OwnedByPlayerStateActor = Cast<const APlayerState>(Actor->GetOwner()))
-			{
-				return OwnedByPlayerStateActor;
-			}
-		}
-	}
-	else if (const AActor* OuterActor = Object->GetTypedOuter<AActor>())
-	{
-		return GetObjectAssociatedPlayerState(OuterActor);
-	}
-
-	return static_cast<const APlayerState*>(nullptr);
-}
-
-bool FLudeoObjectStateManager::SaveWorld
-(
-	const UObject* WorldContextObject,
-	const TOptional<FString> LudeoCreatorPlayerID,
-	const FLudeoRoom& LudeoRoom,
-	const FLudeoSaveGameSpecification& SaveGameSpecification,
-	const FLudeoWritableObject::WritableObjectMapType& ObjectMap
-)
-{
-	check(WorldContextObject != nullptr);
-
-	UWorld* World = WorldContextObject->GetWorld();
-	check(World != nullptr);
-
-	const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection = SaveGameSpecification.SaveGameActorDataCollection;
-
-	const auto SaveAdditionalSaveGameProperty = [&](const FLudeoWritableObject& WritableObject, const UObject* Object, const TArray<FName>& AdditionalSaveGamePropertyCollection)
-	{
-		check(Object != nullptr);
-
-		bool bIsAllDataWrittenSuccessfully = true;
-
-		for (const FName& AdditionalSaveGameProperty : AdditionalSaveGamePropertyCollection)
-		{
-			FProperty* Property = Object->GetClass()->FindPropertyByName(AdditionalSaveGameProperty);
-
-			if (ensure(Property != nullptr))
-			{
-				bIsAllDataWrittenSuccessfully = WritableObject.WriteData
-				(
-					*Property->GetName(),
-					Object,
-					Property,
-					ObjectMap
-				);
-
-				check(bIsAllDataWrittenSuccessfully);
-			}
-		}
-
-		return bIsAllDataWrittenSuccessfully;
-	};
-
-	bool bIsAllDataWrittenSuccessfully = true;
-
-	for (
-		FLudeoWritableObject::WritableObjectMapType::TConstIterator Itr = ObjectMap.CreateConstIterator();
-		(bIsAllDataWrittenSuccessfully && Itr);
-		++Itr
-	)
-	{
-		const UObject* Object = Itr->Get<0>();
-		const FLudeoWritableObject& WritableObject = Itr->Get<1>();
-
-		const auto SaveObject = [&]()
-		{
-			bool bSaveObjectSuccessfully = WritableObject.WriteData(ObjectMap);
-
-			if (const AActor* Actor = Cast<AActor>(Object))
-			{
-				if (const FLudeoSaveGameActorData* SaveGameActorData = FLudeoObjectStateManager::GetSaveGameActorData(Actor->GetClass(), SaveGameActorDataCollection))
-				{
-					bIsAllDataWrittenSuccessfully = SaveAdditionalSaveGameProperty(WritableObject, Actor, SaveGameActorData->AdditionalSaveGamePropertyNameCollection);
-
-					for (TFieldIterator<FObjectProperty> PropertyIterator(Actor->GetClass()); bIsAllDataWrittenSuccessfully && PropertyIterator; ++PropertyIterator)
-					{
-						const FObjectProperty* ObjectProperty = *PropertyIterator;
-						check(ObjectProperty != nullptr);
-
-						if (const UActorComponent* ActorComponent = Cast<UActorComponent>(ObjectProperty->GetObjectPropertyValue_InContainer(Actor)))
-						{
-							if (const FLudeoSaveGameActorCompomnentData* SaveGameActorComponentData = FLudeoObjectStateManager::GetSaveGameActorComponentData(ActorComponent->GetClass(), SaveGameActorData->SaveGameActorComponentDataCollection))
-							{
-								if (
-									SaveGameActorComponentData->Strategy == ELudeoSaveGameStrategy::Purge		||
-									SaveGameActorComponentData->Strategy == ELudeoSaveGameStrategy::Reconcile
-								)
-								{
-									bSaveObjectSuccessfully = WritableObject.WriteData(*ObjectProperty->GetName(), ActorComponent, ObjectMap);
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					check(false);
-				}
-			}
-			else if (const UActorComponent* ActorComponent = Cast<UActorComponent>(Object))
-			{
-				if (const FLudeoSaveGameActorCompomnentData* SaveGameActorComponentData = FLudeoObjectStateManager::GetSaveGameActorComponentData(ActorComponent->GetOuter()->GetClass(), ActorComponent->GetClass(), SaveGameActorDataCollection))
-				{
-					if (SaveGameActorComponentData->Strategy == ELudeoSaveGameStrategy::Purge || SaveGameActorComponentData->Strategy == ELudeoSaveGameStrategy::Reconcile)
-					{
-						bIsAllDataWrittenSuccessfully = SaveAdditionalSaveGameProperty(WritableObject, ActorComponent, SaveGameActorComponentData->AdditionalSaveGamePropertyNameCollection);
-					}
-				}
-			}
-
-			return bSaveObjectSuccessfully;
-		};
-
-		const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoWritableObject> EnterObjectGuard(WritableObject);
-
-		if (const APlayerState* AssociatedPlayer = GetObjectAssociatedPlayerState(Object))
-		{
-			const bool bShouldReplacePlayerIDWithCreatorPlayerID =
-			(
-				(AssociatedPlayer->GetOwner() == World->GetFirstPlayerController()) &&
-				LudeoCreatorPlayerID.IsSet() &&
-				!LudeoCreatorPlayerID.GetValue().IsEmpty()
-			);
-
-			const FScopedWritableObjectBindPlayerGuard<FLudeoWritableObject> BindPlayerGuard
-			(
-				WritableObject,
-				(bShouldReplacePlayerIDWithCreatorPlayerID ? LudeoCreatorPlayerID.GetValue() : AssociatedPlayer->GetUniqueId().ToString())
-			);
-
-			bIsAllDataWrittenSuccessfully = SaveObject();
-		}
-		else
-		{
-			bIsAllDataWrittenSuccessfully = SaveObject();
-		}
-
-		if (bIsAllDataWrittenSuccessfully)
-		{
-			const UObject* OuterObject = Object->GetOuter();
-			check(OuterObject != nullptr);
-
-			if (!OuterObject->IsA(ULevel::StaticClass()))
-			{
-				bIsAllDataWrittenSuccessfully = WritableObject.WriteData
-				(
-					TEXT("OuterPrivate"),
-					static_cast<FLudeoObjectHandle>(ObjectMap.FindChecked(OuterObject))
-				);
-			}
-		}
-	}
-
-	return bIsAllDataWrittenSuccessfully;
 }
 
 void FLudeoObjectStateManager::CreateSaveWorldObjectMap
@@ -448,66 +103,6 @@ void FLudeoObjectStateManager::CreateSaveWorldObjectMap
 			}
 		}
 	}
-}
-
-const FLudeoSaveGameActorData* FLudeoObjectStateManager::GetSaveGameActorData
-(
-	const TSubclassOf<AActor>& ActorClass,
-	const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection
-)
-{
-	check(ActorClass != nullptr);
-
-	const int32 Index = SaveGameActorDataCollection.FindLastByPredicate([&](const FLudeoSaveGameActorData& SaveGameActorData)
-	{
-		return SaveGameActorData.ActorFilter.Match(ActorClass);
-	});
-
-	if (SaveGameActorDataCollection.IsValidIndex(Index))
-	{
-		return &SaveGameActorDataCollection[Index];
-	}
-
-	return nullptr;
-}
-
-const FLudeoSaveGameActorCompomnentData* FLudeoObjectStateManager::GetSaveGameActorComponentData
-(
-	const TSubclassOf<UActorComponent>& ActorComponentClass,
-	const TArray<FLudeoSaveGameActorCompomnentData>& SaveGameActorComponentDataCollection
-)
-{
-	const int32 Index = SaveGameActorComponentDataCollection.FindLastByPredicate
-	(
-		[&](const FLudeoSaveGameActorCompomnentData& SaveGameActorComponentData)
-		{
-			return SaveGameActorComponentData.ActorCompomnentFilter.Match(ActorComponentClass);
-		}
-	);
-
-	if (SaveGameActorComponentDataCollection.IsValidIndex(Index))
-	{
-		return &SaveGameActorComponentDataCollection[Index];
-	}
-
-	return nullptr;
-}
-
-const FLudeoSaveGameActorCompomnentData* FLudeoObjectStateManager::GetSaveGameActorComponentData
-(
-	const TSubclassOf<AActor>& OuterActorClass,
-	const TSubclassOf<UActorComponent>& ActorComponentClass,
-	const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection
-)
-{
-	check(ActorComponentClass != nullptr);
-
-	if (const FLudeoSaveGameActorData* SaveGameActorData = FLudeoObjectStateManager::GetSaveGameActorData(OuterActorClass, SaveGameActorDataCollection))
-	{
-		return GetSaveGameActorComponentData(ActorComponentClass, SaveGameActorData->SaveGameActorComponentDataCollection);
-	}
-
-	return nullptr;
 }
 
 bool FLudeoObjectStateManager::CreateRestoreWorldObjectMap
@@ -786,6 +381,177 @@ bool FLudeoObjectStateManager::CreateRestoreWorldObjectMap
 	return true;
 }
 
+bool FLudeoObjectStateManager::IsTargetObjectToBeSaved(const UObject* WorldContextObject, const UObject* Object)
+{
+	check(WorldContextObject != nullptr);
+
+	return
+	(
+		(Object != nullptr) &&
+		(Object->GetWorld() == WorldContextObject->GetWorld()) &&
+		!Object->IsPendingKillOrUnreachable() &&
+		!Object->HasAnyFlags(RF_ClassDefaultObject) &&
+		(Object->GetOutermost() != GetTransientPackage())
+	);
+}
+
+void FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
+(
+	const UObject* WorldContextObject,
+	const UStruct* StructureType,
+	const void* MemoryAddress,
+	TSet<const UObject*>& ObjectSet,
+	TSet<const UObject*>& HasVisitedObjectSet
+)
+{
+	for (TFieldIterator<FProperty> PropertyIterator(StructureType); PropertyIterator; ++PropertyIterator)
+	{
+		FProperty* Property = *PropertyIterator;
+		check(Property != nullptr);
+
+		if (Property->HasAllPropertyFlags(EPropertyFlags::CPF_SaveGame))
+		{
+			if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+			{
+				FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
+				(
+					WorldContextObject,
+					StructProperty->Struct,
+					StructProperty->ContainerPtrToValuePtr<void>(MemoryAddress),
+					ObjectSet,
+					HasVisitedObjectSet
+				);
+			}
+			else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+			{
+				const UObject* Object = ObjectProperty->GetObjectPropertyValue(ObjectProperty->ContainerPtrToValuePtr<void>(MemoryAddress));
+
+				if (Object != nullptr)
+				{
+					if (!HasVisitedObjectSet.Contains(Object))
+					{
+						HasVisitedObjectSet.Add(Object);
+
+						if (FLudeoObjectStateManager::IsTargetObjectToBeSaved(WorldContextObject, Object))
+						{
+							ObjectSet.Add(Object);
+						}
+
+						FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
+						(
+							WorldContextObject,
+							Object->GetClass(),
+							Object,
+							ObjectSet,
+							HasVisitedObjectSet
+						);
+					}
+				}
+			}
+		}
+	}
+}
+
+TSet<const UObject*> FLudeoObjectStateManager::GetObjectToBeSavedSet
+(
+	const UObject* WorldContextObject,
+	const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection
+)
+{
+	check(WorldContextObject != nullptr);
+
+	UWorld* World = WorldContextObject->GetWorld();
+	check(World != nullptr);
+
+	TSet<const UObject*> ObjectSet;
+	TSet<const UObject*> HasVisitedObjectSet;
+
+	for (FActorIterator ActorItr(World); ActorItr; ++ActorItr)
+	{
+		AActor* Actor = *ActorItr;
+		check(Actor != nullptr);
+
+		if (ULevel* Outer = Cast<ULevel>(Actor->GetOuter()))
+		{
+			if(FLudeoObjectStateManager::IsTargetObjectToBeSaved(World, Actor))
+			{
+				if (const FLudeoSaveGameActorData* SaveGameActorData = FLudeoObjectStateManager::GetSaveGameActorData(Actor->GetClass(), SaveGameActorDataCollection))
+				{
+					// Actor
+					if(SaveGameActorData->Strategy == ELudeoSaveGameStrategy::Purge || SaveGameActorData->Strategy == ELudeoSaveGameStrategy::Reconcile)
+					{
+						HasVisitedObjectSet.Add(Actor);
+						ObjectSet.Add(Actor);
+
+						FLudeoObjectStateManager::FindObjectToBeSavedFromProperty(World, Actor->GetClass(), Actor, ObjectSet, HasVisitedObjectSet);
+					}
+
+					if(SaveGameActorData->SaveGameActorComponentDataCollection.Num() > 0)
+					{
+						for (TFieldIterator<FObjectProperty> PropertyIterator(Actor->GetClass()); PropertyIterator; ++PropertyIterator)
+						{
+							FObjectProperty* ObjectProperty = *PropertyIterator;
+							check(ObjectProperty != nullptr);
+
+							const UActorComponent* ActorComponent = Cast<UActorComponent>(ObjectProperty->GetObjectPropertyValue(ObjectProperty->ContainerPtrToValuePtr<void>(Actor)));
+
+							if(ActorComponent != nullptr)
+							{
+								if (const FLudeoSaveGameActorCompomnentData* SaveGameActorCompomnentData = FLudeoObjectStateManager::GetSaveGameActorComponentData(ActorComponent->GetClass(), SaveGameActorData->SaveGameActorComponentDataCollection))
+								{
+									if (SaveGameActorCompomnentData->Strategy == ELudeoSaveGameStrategy::Purge || SaveGameActorCompomnentData->Strategy == ELudeoSaveGameStrategy::Reconcile)
+									{
+										HasVisitedObjectSet.Add(ActorComponent);
+										ObjectSet.Add(ActorComponent);
+
+										FLudeoObjectStateManager::FindObjectToBeSavedFromProperty(World, ActorComponent->GetClass(), ActorComponent, ObjectSet, HasVisitedObjectSet);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return ObjectSet;
+}
+
+const APlayerState* FLudeoObjectStateManager::GetObjectAssociatedPlayerState(const UObject* Object)
+{
+	check(Object != nullptr);
+
+	if (const AActor* Actor = Cast<const AActor>(Object))
+	{
+		if (const APlayerController* PlayerControllerActor = Cast<const APlayerController>(Object))
+		{
+			return Cast<const APlayerState>(PlayerControllerActor->PlayerState);
+		}
+		else if (const APlayerState* PlayerStateActor = Cast<const APlayerState>(Object))
+		{
+			return PlayerStateActor;
+		}
+		else
+		{
+			if (APlayerController* OwnedByPlayerControllerActor = Cast<APlayerController>(Actor->GetOwner()))
+			{
+				return Cast<const APlayerState>(OwnedByPlayerControllerActor->PlayerState);
+			}
+			else if (const APlayerState* OwnedByPlayerStateActor = Cast<const APlayerState>(Actor->GetOwner()))
+			{
+				return OwnedByPlayerStateActor;
+			}
+		}
+	}
+	else if (const AActor* OuterActor = Object->GetTypedOuter<AActor>())
+	{
+		return GetObjectAssociatedPlayerState(OuterActor);
+	}
+
+	return static_cast<const APlayerState*>(nullptr);
+}
+
 TMap<TSubclassOf<AActor>, TArray<const AActor*>> FLudeoObjectStateManager::GetActorClassMap(const UWorld* World)
 {
 	TMap<TSubclassOf<AActor>, TArray<const AActor*>> ActorClassMap;
@@ -803,13 +569,231 @@ TMap<TSubclassOf<AActor>, TArray<const AActor*>> FLudeoObjectStateManager::GetAc
 	return ActorClassMap;
 }
 
-bool FLudeoObjectStateManager::RestoreWorld
+const FLudeoSaveGameActorData* FLudeoObjectStateManager::GetSaveGameActorData
 (
-	const FLudeoSaveGameSpecification& SaveGameSpecification,
-	const FLudeoReadableObject::ReadableObjectMapType& ObjectMap
+	const TSubclassOf<AActor>& ActorClass,
+	const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection
 )
 {
-	const auto RestoreAdditionalSaveGameProperty = [&](const FLudeoReadableObject& ReadableObject, const UObject* Object, const TArray<FName>& AdditionalSaveGamePropertyCollection)
+	check(ActorClass != nullptr);
+
+	const int32 Index = SaveGameActorDataCollection.FindLastByPredicate([&](const FLudeoSaveGameActorData& SaveGameActorData)
+	{
+		return SaveGameActorData.ActorFilter.Match(ActorClass);
+	});
+
+	if (SaveGameActorDataCollection.IsValidIndex(Index))
+	{
+		return &SaveGameActorDataCollection[Index];
+	}
+
+	return nullptr;
+}
+
+const FLudeoSaveGameActorCompomnentData* FLudeoObjectStateManager::GetSaveGameActorComponentData
+(
+	const TSubclassOf<UActorComponent>& ActorComponentClass,
+	const TArray<FLudeoSaveGameActorCompomnentData>& SaveGameActorComponentDataCollection
+)
+{
+	const int32 Index = SaveGameActorComponentDataCollection.FindLastByPredicate
+	(
+		[&](const FLudeoSaveGameActorCompomnentData& SaveGameActorComponentData)
+		{
+			return SaveGameActorComponentData.ActorCompomnentFilter.Match(ActorComponentClass);
+		}
+	);
+
+	if (SaveGameActorComponentDataCollection.IsValidIndex(Index))
+	{
+		return &SaveGameActorComponentDataCollection[Index];
+	}
+
+	return nullptr;
+}
+
+const FLudeoSaveGameActorCompomnentData* FLudeoObjectStateManager::GetSaveGameActorComponentData
+(
+	const TSubclassOf<AActor>& OuterActorClass,
+	const TSubclassOf<UActorComponent>& ActorComponentClass,
+	const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection
+)
+{
+	check(ActorComponentClass != nullptr);
+
+	if (const FLudeoSaveGameActorData* SaveGameActorData = FLudeoObjectStateManager::GetSaveGameActorData(OuterActorClass, SaveGameActorDataCollection))
+	{
+		return GetSaveGameActorComponentData(ActorComponentClass, SaveGameActorData->SaveGameActorComponentDataCollection);
+	}
+
+	return nullptr;
+}
+
+bool FLudeoObjectStateManager::SaveWorld
+(
+	const UObject* WorldContextObject,
+	const TOptional<FString> LudeoCreatorPlayerID,
+	const FLudeoRoom& LudeoRoom,
+	const FLudeoSaveGameSpecification& SaveGameSpecification,
+	FLudeoWritableObject::WritableObjectMapType& ObjectMap
+)
+{
+	check(WorldContextObject != nullptr);
+
+	UWorld* World = WorldContextObject->GetWorld();
+	check(World != nullptr);
+
+	FLudeoObjectStateManager::CreateSaveWorldObjectMap(WorldContextObject, LudeoRoom, SaveGameSpecification, ObjectMap);
+
+	const TArray<FLudeoSaveGameActorData>& SaveGameActorDataCollection = SaveGameSpecification.SaveGameActorDataCollection;
+
+	const auto SaveAdditionalSaveGameProperty = [&](const FLudeoWritableObject& WritableObject, const UObject* Object, const TArray<FName>& AdditionalSaveGamePropertyCollection)
+	{
+		check(Object != nullptr);
+
+		bool bIsAllDataWrittenSuccessfully = true;
+
+		for (const FName& AdditionalSaveGameProperty : AdditionalSaveGamePropertyCollection)
+		{
+			FProperty* Property = Object->GetClass()->FindPropertyByName(AdditionalSaveGameProperty);
+
+			if (ensure(Property != nullptr))
+			{
+				bIsAllDataWrittenSuccessfully = WritableObject.WriteData
+				(
+					*Property->GetName(),
+					Object,
+					Property,
+					ObjectMap
+				);
+
+				check(bIsAllDataWrittenSuccessfully);
+			}
+		}
+
+		return bIsAllDataWrittenSuccessfully;
+	};
+
+	bool bIsAllDataWrittenSuccessfully = true;
+
+	for (
+		FLudeoWritableObject::WritableObjectMapType::TConstIterator Itr = ObjectMap.CreateConstIterator();
+		(bIsAllDataWrittenSuccessfully && Itr);
+		++Itr
+	)
+	{
+		const UObject* Object = Itr->Get<0>();
+		const FLudeoWritableObject& WritableObject = Itr->Get<1>();
+
+		const auto SaveObject = [&]()
+		{
+			bool bSaveObjectSuccessfully = WritableObject.WriteData(ObjectMap);
+
+			if (const AActor* Actor = Cast<AActor>(Object))
+			{
+				if (const FLudeoSaveGameActorData* SaveGameActorData = FLudeoObjectStateManager::GetSaveGameActorData(Actor->GetClass(), SaveGameActorDataCollection))
+				{
+					bIsAllDataWrittenSuccessfully = SaveAdditionalSaveGameProperty(WritableObject, Actor, SaveGameActorData->AdditionalSaveGamePropertyNameCollection);
+
+					for (TFieldIterator<FObjectProperty> PropertyIterator(Actor->GetClass()); bIsAllDataWrittenSuccessfully && PropertyIterator; ++PropertyIterator)
+					{
+						const FObjectProperty* ObjectProperty = *PropertyIterator;
+						check(ObjectProperty != nullptr);
+
+						if (const UActorComponent* ActorComponent = Cast<UActorComponent>(ObjectProperty->GetObjectPropertyValue_InContainer(Actor)))
+						{
+							if (const FLudeoSaveGameActorCompomnentData* SaveGameActorComponentData = FLudeoObjectStateManager::GetSaveGameActorComponentData(ActorComponent->GetClass(), SaveGameActorData->SaveGameActorComponentDataCollection))
+							{
+								if (
+									SaveGameActorComponentData->Strategy == ELudeoSaveGameStrategy::Purge		||
+									SaveGameActorComponentData->Strategy == ELudeoSaveGameStrategy::Reconcile
+								)
+								{
+									bSaveObjectSuccessfully = WritableObject.WriteData(*ObjectProperty->GetName(), ActorComponent, ObjectMap);
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					check(false);
+				}
+			}
+			else if (const UActorComponent* ActorComponent = Cast<UActorComponent>(Object))
+			{
+				if (const FLudeoSaveGameActorCompomnentData* SaveGameActorComponentData = FLudeoObjectStateManager::GetSaveGameActorComponentData(ActorComponent->GetOuter()->GetClass(), ActorComponent->GetClass(), SaveGameActorDataCollection))
+				{
+					if (SaveGameActorComponentData->Strategy == ELudeoSaveGameStrategy::Purge || SaveGameActorComponentData->Strategy == ELudeoSaveGameStrategy::Reconcile)
+					{
+						bIsAllDataWrittenSuccessfully = SaveAdditionalSaveGameProperty(WritableObject, ActorComponent, SaveGameActorComponentData->AdditionalSaveGamePropertyNameCollection);
+					}
+				}
+			}
+
+			return bSaveObjectSuccessfully;
+		};
+
+		const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoWritableObject> EnterObjectGuard(WritableObject);
+
+		if (const APlayerState* AssociatedPlayer = GetObjectAssociatedPlayerState(Object))
+		{
+			const bool bShouldReplacePlayerIDWithCreatorPlayerID =
+			(
+				(AssociatedPlayer->GetOwner() == World->GetFirstPlayerController()) &&
+				LudeoCreatorPlayerID.IsSet() &&
+				!LudeoCreatorPlayerID.GetValue().IsEmpty()
+			);
+
+			const FScopedWritableObjectBindPlayerGuard<FLudeoWritableObject> BindPlayerGuard
+			(
+				WritableObject,
+				(bShouldReplacePlayerIDWithCreatorPlayerID ? *LudeoCreatorPlayerID.GetValue() : *AssociatedPlayer->GetUniqueId().ToString())
+			);
+
+			bIsAllDataWrittenSuccessfully = SaveObject();
+		}
+		else
+		{
+			bIsAllDataWrittenSuccessfully = SaveObject();
+		}
+
+		if (bIsAllDataWrittenSuccessfully)
+		{
+			const UObject* OuterObject = Object->GetOuter();
+			check(OuterObject != nullptr);
+
+			if (!OuterObject->IsA(ULevel::StaticClass()))
+			{
+				bIsAllDataWrittenSuccessfully = WritableObject.WriteData
+				(
+					TEXT("OuterPrivate"),
+					static_cast<FLudeoObjectHandle>(ObjectMap.FindChecked(OuterObject))
+				);
+			}
+		}
+	}
+
+	return bIsAllDataWrittenSuccessfully;
+}
+
+bool FLudeoObjectStateManager::RestoreWorld
+(
+	const UObject* WorldContextObject,
+	const TArray<FLudeoObjectInformation>& ObjectInformationCollection,
+	const TArray<TSubclassOf<UObject>>& ObjectClassCollection,
+	const FLudeoSaveGameSpecification& SaveGameSpecification,
+	const FLudeoReadableObject::ReadableObjectMapType& InputObjectMap
+)
+{
+	FLudeoReadableObject::ReadableObjectMapType ObjectMap = InputObjectMap;
+
+	const auto RestoreAdditionalSaveGameProperty = [&]
+	(
+		const FLudeoReadableObject& ReadableObject,
+		const UObject* Object,
+		const TArray<FName>& AdditionalSaveGamePropertyCollection
+	)
 	{
 		bool bIsAllDataReadSuccessfully = true;
 
@@ -836,6 +820,15 @@ bool FLudeoObjectStateManager::RestoreWorld
 
 		return bIsAllDataReadSuccessfully;
 	};
+
+	FLudeoObjectStateManager::CreateRestoreWorldObjectMap
+	(
+		WorldContextObject,
+		ObjectInformationCollection,
+		ObjectClassCollection,
+		SaveGameSpecification,
+		ObjectMap
+	);
 
 	bool bIsAllDataReadSuccessfully = true;
 

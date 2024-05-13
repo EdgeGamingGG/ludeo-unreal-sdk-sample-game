@@ -84,6 +84,19 @@ bool GenericReadData(const FLudeoHandle& LudeoHandle, const char* AttributeName,
 	return false;
 }
 
+FLudeoReadableObject::FLudeoReadableObject(const FLudeoObjectHandle InObjectHandle, const FLudeoHandle& InLudeoHandle) :
+	FLudeoObject(InObjectHandle),
+	LudeoHandle(InLudeoHandle)
+{
+	check(IsValid());
+	check(LudeoHandle != nullptr);
+}
+
+FLudeoReadableObject::~FLudeoReadableObject()
+{
+
+}
+
 bool FLudeoReadableObject::EnterObject() const
 {
 	const FLudeoResult Result = ConditionalDataReaderSetCurrent(LudeoHandle);

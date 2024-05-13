@@ -11,19 +11,22 @@ public:
 	typedef TMap<FLudeoReadableObject, const UObject*> ReadableObjectMapType;
 
 public:
-	FLudeoReadableObject(const FLudeoObjectHandle InObjectHandle, const FLudeoHandle& InLudeoHandle) :
-		FLudeoObject(InObjectHandle),
-		LudeoHandle(InLudeoHandle)
-	{
+	FLudeoReadableObject(const FLudeoObjectHandle InObjectHandle, const FLudeoHandle& InLudeoHandle);
+	~FLudeoReadableObject();
 
-	}
-
+	/* Pushes the current object to the DataReader context stack */
 	bool EnterObject() const;
+
+	/* Pop the object from the DataReader context stack */
 	bool LeaveObject() const;
 
+	/* Pushes the struct associated with the AttributeName to the DataReader context stack */
 	bool EnterComponent(const TCHAR* AttributeName) const;
+
+	/* Pop the struct from the DataReader context stack */
 	bool LeaveComponent() const;
 
+	// Check if an attribute exists
 	bool ExistAttribute(const TCHAR* AttributeName) const;
 
 	bool ReadData

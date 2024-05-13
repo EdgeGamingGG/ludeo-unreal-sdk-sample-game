@@ -5,13 +5,8 @@
 struct LUDEOUESDK_API FLudeoObject
 {
 public:
-	FLudeoObject(const FLudeoObjectHandle InObjectHandle) :
-		ObjectHandle(InObjectHandle)
-	{
-
-	}
-
-	~FLudeoObject() = default;
+	FLudeoObject(const FLudeoObjectHandle InObjectHandle);
+	~FLudeoObject();
 
 	FORCEINLINE operator const FLudeoObjectHandle&() const
 	{
@@ -30,7 +25,7 @@ public:
 
 	FORCEINLINE bool IsValid() const
 	{
-		return (ObjectHandle != LUDEO_INVALID_OBJECTID);
+		return ObjectHandle.IsValid();
 	}
 
 private:

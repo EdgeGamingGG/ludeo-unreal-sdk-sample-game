@@ -11,7 +11,6 @@ class LUDEOUESDK_API FLudeoSession
 
 public:
 	FLudeoSession(const FLudeoSessionHandle& InSessionHandle);
-
 	~FLudeoSession();
 	
 	FORCEINLINE operator const FLudeoSessionHandle&() const

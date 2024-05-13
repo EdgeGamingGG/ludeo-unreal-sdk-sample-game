@@ -10,6 +10,17 @@
 #include "LudeoUESDK/LudeoObject/LudeoObject.h"
 #include "LudeoUESDK/LudeoSession/LudeoSessionManager.h"
 
+FLudeoRoomWriter::FLudeoRoomWriter(const FLudeoRoomWriterHandle& InRoomWriterHandle) :
+	RoomWriterHandle(InRoomWriterHandle)
+{
+	check(RoomWriterHandle != nullptr);
+}
+
+FLudeoRoomWriter::~FLudeoRoomWriter()
+{
+
+}
+
 FLudeoResult FLudeoRoomWriter::SetSendSettings(const FLudeoRoomWriterSetSendSettingsParameters& SetSendSettingsParameters) const
 {
 	check(SetSendSettingsParameters.SendInteralMS <= TNumericLimits<uint32_t>::Max());

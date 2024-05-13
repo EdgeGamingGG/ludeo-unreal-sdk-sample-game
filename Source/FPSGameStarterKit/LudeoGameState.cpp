@@ -1,17 +1,12 @@
 #include "LudeoGameState.h"
 
-#include "GameFramework/GameState.h"
-#include "GameFramework/PlayerState.h"
-#include "GameFramework/Character.h"
+#include "LudeoUESDK/LudeoScopedGuard.h"
 
+#include "GameFramework/PlayerState.h"
 #include "Engine/LevelScriptActor.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
-#include "EngineUtils.h"
-#include "AIController.h"
-
-#include "LudeoUESDK/LudeoManager/LudeoManager.h"
-#include "LudeoUESDK/LudeoScopedGuard.h"
+#include "OnlineSubsystemTypes.h"
 
 #include "LudeoGameInstance.h"
 #include "LudeoPlayerController.h"
@@ -440,7 +435,7 @@ void ALudeoGameState::TickSaveObjectState()
 {
 	if (const FLudeoRoom* Room = FLudeoRoom::GetRoomByRoomHandle(LudeoRoomHandle))
 	{
-		FLudeoObjectStateManager::TickSaveObjectState(this, LudeoCreatorPlayerID, *Room, SaveGameSpecification, ObjectMap);
+		FLudeoObjectStateManager::SaveWorld(this, LudeoCreatorPlayerID, *Room, SaveGameSpecification, ObjectMap);
 
 		for (APlayerState* PlayerState : PlayerArray)
 		{
@@ -500,20 +495,20 @@ void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
 	{
 		for (int32 i = 0; i < ObjectInformationCollection.Num(); ++i)
 		{
-			const FLudeoReadableObject& ReadableObjecct = ObjectInformationCollection[i].ReadableObject;
+			const FLudeoReadableObject& ReadableObject = ObjectInformationCollection[i].ReadableObject;
 			const TSubclassOf<UObject>& ObjectClass = ObjectClassCollection[i];
 
 			if (ObjectClass->IsChildOf(APlayerState::StaticClass()))
 			{
-				const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObjecct);
+				const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
 
 				FString PlayerID;
-				const bool bHasRead = ReadableObjecct.ReadData(TEXT("PlayerID"), PlayerID);
+				const bool bHasRead = ReadableObject.ReadData(TEXT("PlayerID"), PlayerID);
 				check(bHasRead);
 
 				if (PlayerID == Ludeo.GetCreatorPlayerID())
 				{
-					return static_cast<FLudeoObjectHandle>(ReadableObjecct);
+					return static_cast<FLudeoObjectHandle>(ReadableObject);
 				}
 			}
 		}
@@ -535,13 +530,15 @@ void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
 
 			if (ObjectClass->IsChildOf(APlayerController::StaticClass()))
 			{
-				check(CreatorPlayerController->IsA(ObjectClass));
-
-				const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
+				check(CreatorPlayerController->GetClass() == ObjectClass);
 
 				FLudeoObjectHandle PlayerStateObjectHandle;
-				const bool bHasRead = ReadableObject.ReadData(TEXT("PlayerState"), PlayerStateObjectHandle);
-				check(bHasRead && PlayerStateObjectHandle.IsValid());
+				{
+					const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
+
+					const bool bHasRead = ReadableObject.ReadData(TEXT("PlayerState"), PlayerStateObjectHandle);
+					check(bHasRead && PlayerStateObjectHandle.IsValid());
+				}
 
 				const int32 PlayerStateIndex = ObjectInformationCollection.IndexOfByPredicate
 				(
@@ -573,6 +570,15 @@ void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
 					check(PlayerController != nullptr);
 					check(PlayerController->PlayerState != nullptr);
 
+					FString PlayerID;
+					{
+						const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(PlayerStateObjectInformation.ReadableObject);
+
+						const bool bHasRead = PlayerStateObjectInformation.ReadableObject.ReadData(TEXT("PlayerID"), PlayerID);
+						check(bHasRead && !PlayerID.IsEmpty());
+					}
+					PlayerController->PlayerState->SetUniqueId(MakeShared<FUniqueNetIdString>(PlayerID));
+
 					RestoreWorldObjectMap.Emplace(ReadableObject, PlayerController);
 					RestoreWorldObjectMap.Emplace(PlayerStateObjectInformation.ReadableObject, PlayerController->PlayerState);
 				}
@@ -580,9 +586,9 @@ void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
 		}
 	}
 
-	// Step four: Restore the world using the object map
+	// Step four: Restore the world
 	{
-		const bool bHasCreatedRestoreWorldObjectMap = FLudeoObjectStateManager::CreateRestoreWorldObjectMap
+		const bool bHasWorldRestored = FLudeoObjectStateManager::RestoreWorld
 		(
 			World,
 			ObjectInformationCollection,
@@ -590,27 +596,21 @@ void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
 			SaveGameSpecification,
 			RestoreWorldObjectMap
 		);
-		check(bHasCreatedRestoreWorldObjectMap);
-
-		const bool bHasWorldRestored = FLudeoObjectStateManager::RestoreWorld
-		(
-			SaveGameSpecification,
-			RestoreWorldObjectMap
-		);
 		check(bHasWorldRestored);
 	}
 
-	for (FActorIterator Itr(World, ALudeoPlayerController::StaticClass()); Itr; ++Itr)
+	for (APlayerState* PlayerState : PlayerArray)
 	{
-		if (ALudeoPlayerController* LudeoPlayerController = Cast<ALudeoPlayerController>(*Itr))
+		if (PlayerState != nullptr)
 		{
-			check(LudeoPlayerController->PlayerState != nullptr);
-
-			if (ACharacter* CharacterPawn = LudeoPlayerController->GetCharacterPawn())
+			if (ALudeoPlayerController* LudeoPlayerController = Cast<ALudeoPlayerController>(PlayerState->GetOwner()))
 			{
-				LudeoPlayerController->PlayerState->SetIsABot(LudeoPlayerController != World->GetFirstPlayerController());
+				if (APawn* CharacterPawn = LudeoPlayerController->GetCharacterPawn())
+				{
+					LudeoPlayerController->PlayerState->SetIsABot(LudeoPlayerController != World->GetFirstPlayerController());
 
-				LudeoPlayerController->Possess(CharacterPawn);
+					LudeoPlayerController->Possess(CharacterPawn);
+				}
 			}
 		}
 	}

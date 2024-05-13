@@ -110,23 +110,31 @@ FString ULudeoGameInstance::GetLudeoMapName(const FLudeo& Ludeo) const
 
 	const int32 SearchStartPosition = TStringView<TCHAR>(TEXT("/Game/FPS_Game/")).Len();
 
+	const TStringView<TCHAR> SearchString(TEXT("Maps"));
+
 	const int32 LevelScriptActorIndex = ObjectInformationCollection.IndexOfByPredicate([&](const FLudeoObjectInformation& ObjectInformation)
 	{
-		const int32 Index = ObjectInformation.ObjectType.Find
-		(
-			TEXT("Maps"),
-			ESearchCase::CaseSensitive,
-			ESearchDir::Type::FromStart,
-			SearchStartPosition
-		);
+		if (ObjectInformation.ObjectType.Len() >= (SearchStartPosition + SearchString.Len()))
+		{
+			const TStringView<TCHAR> Substring(ObjectInformation.ObjectType.GetCharArray().GetData() + SearchStartPosition, SearchString.Len());
 
-		return (Index != INDEX_NONE);
+			return (Substring == SearchString);
+		}
+
+		return false;
 	});
 	check(ObjectInformationCollection.IsValidIndex(LevelScriptActorIndex));
 
 	if (ObjectInformationCollection.IsValidIndex(LevelScriptActorIndex))
 	{
-		ObjectInformationCollection[LevelScriptActorIndex].ObjectType.Split(TEXT("."), &MapName, nullptr);
+		ObjectInformationCollection[LevelScriptActorIndex].ObjectType.Split
+		(
+			TEXT("."),
+			&MapName,
+			nullptr,
+			ESearchCase::CaseSensitive,
+			ESearchDir::FromEnd
+		);
 	}
 		
 	return MapName;

@@ -8,6 +8,8 @@
 FLudeo::FLudeo(const FLudeoHandle& InLudeoHandle) :
 	LudeoHandle(InLudeoHandle)
 {
+	check(LudeoHandle != nullptr);
+
 	const LudeoDataReaderGetInfoParams GetInfoParams = Ludeo::create<LudeoDataReaderGetInfoParams>();
 
 	LudeoDataReaderInfo* pDataReaderInformation = nullptr;

@@ -16,7 +16,6 @@ class LUDEOUESDK_API FLudeo
 
 public:
 	FLudeo(const FLudeoHandle& InLudeoHandle);
-
 	~FLudeo();
 
 	FORCEINLINE operator const FLudeoHandle&() const

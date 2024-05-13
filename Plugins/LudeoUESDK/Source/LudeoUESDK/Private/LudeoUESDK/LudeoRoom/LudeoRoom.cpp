@@ -25,6 +25,8 @@ FLudeoRoom::FLudeoRoom(const FLudeoRoomHandle& InRoomHandle, const FLudeoRoomWri
 	RoomHandle(InRoomHandle),
 	RoomWriter(InRoomWriterHandle)
 {
+	check(RoomHandle != nullptr);
+
 	const LudeoRoomGetInfoParams InternalGetRoomInformationParams = Ludeo::create<LudeoRoomGetInfoParams>();
 
 	LudeoRoomInfo* InternalRoomInformation = nullptr;

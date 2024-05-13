@@ -39,7 +39,7 @@ struct FLudeoSessionPendingCloseRoomData : public FLudeoSessionPendingData
 FLudeoSession::FLudeoSession(const FLudeoSessionHandle& InSessionHandle) :
 	SessionHandle(InSessionHandle)
 {
-
+	check(SessionHandle != nullptr);
 }
 
 FLudeoSession::~FLudeoSession()

@@ -34,7 +34,12 @@ bool FLudeoWritableObjectEnterObjectTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoWritableObject WritableObject(nullptr, LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoWritableObject WritableObject
+		(
+			NewObject<USceneComponent>(),
+			0xBadBeef,
+			reinterpret_cast<LudeoHDataWriter>(0xBadBeef)
+		);
 
 		TestTrue(TEXT("Enter object"), WritableObject.EnterObject());
 	}
@@ -66,7 +71,12 @@ bool FLudeoWritableObjectLeaveObjectTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoWritableObject WritableObject(nullptr, LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoWritableObject WritableObject
+		(
+			NewObject<USceneComponent>(),
+			0xBadBeef,
+			reinterpret_cast<LudeoHDataWriter>(0xBadBeef)
+		);
 
 		TestTrue(TEXT("Leave object"), WritableObject.LeaveObject());
 	}
@@ -98,7 +108,12 @@ bool FLudeoWritableObjectEnterComponentTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoWritableObject WritableObject(nullptr, LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoWritableObject WritableObject
+		(
+			NewObject<USceneComponent>(),
+			0xBadBeef,
+			reinterpret_cast<LudeoHDataWriter>(0xBadBeef)
+		);
 
 		TestTrue(TEXT("Leave object"), WritableObject.EnterComponent({}));
 	}
@@ -130,7 +145,12 @@ bool FLudeoWritableObjectLeaveComponentTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoWritableObject WritableObject(nullptr, LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoWritableObject WritableObject
+		(
+			NewObject<USceneComponent>(),
+			0xBadBeef,
+			reinterpret_cast<LudeoHDataWriter>(0xBadBeef)
+		);
 
 		TestTrue(TEXT("Leave object"), WritableObject.LeaveComponent());
 	}
@@ -163,7 +183,12 @@ bool FLudeoWritableObjectBindPlayerTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoWritableObject WritableObject(nullptr, LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoWritableObject WritableObject
+		(
+			NewObject<USceneComponent>(),
+			0xBadBeef,
+			reinterpret_cast<LudeoHDataWriter>(0xBadBeef)
+		);
 		
 		TestTrue(TEXT("Bind Player"), WritableObject.BindPlayer(TEXT("Bad Beef")));
 	}
@@ -187,7 +212,12 @@ bool FLudeoWritableObjectUnbindPlayerTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		const FLudeoWritableObject WritableObject(nullptr, LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoWritableObject WritableObject
+		(
+			NewObject<USceneComponent>(),
+			0xBadBeef,
+			reinterpret_cast<LudeoHDataWriter>(0xBadBeef)
+		);
 
 		TestTrue(TEXT("Unbind Player"), WritableObject.UnbindPlayer());
 	}
@@ -350,7 +380,12 @@ bool FLudeoWritableObjectWriteDataTest::RunTest(const FString& Parameters)
 		FName Name;
 		UClass* ObjectClass = AActor::StaticClass();
 
-		const FLudeoWritableObject WritableObject(nullptr, LUDEO_INVALID_OBJECTID, nullptr);
+		const FLudeoWritableObject WritableObject
+		(
+			NewObject<USceneComponent>(),
+			0xBadBeef,
+			reinterpret_cast<LudeoHDataWriter>(0xBadBeef)
+		);
 
 		TestTrue(TEXT("Set Int8 Data"),					WritableObject.WriteData(TEXT("Bad Beef"), static_cast<int8>(Data[0])));
 		TestTrue(TEXT("Set Int16 Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<int16>(Data[0])));

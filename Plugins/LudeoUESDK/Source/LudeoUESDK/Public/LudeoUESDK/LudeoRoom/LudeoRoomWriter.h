@@ -8,11 +8,8 @@
 class LUDEOUESDK_API FLudeoRoomWriter
 {
 public:
-	FLudeoRoomWriter(const FLudeoRoomWriterHandle& InRoomWriterHandle) :
-		RoomWriterHandle(InRoomWriterHandle)
-	{
-
-	}
+	FLudeoRoomWriter(const FLudeoRoomWriterHandle& InRoomWriterHandle);
+	~FLudeoRoomWriter();
 
 	FORCEINLINE operator const FLudeoRoomWriterHandle& () const
 	{
