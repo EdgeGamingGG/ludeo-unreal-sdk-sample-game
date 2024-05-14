@@ -19,7 +19,6 @@ public:
 	static bool SaveWorld
 	(
 		const UObject* WorldContextObject,
-		const TOptional<FString> LudeoCreatorPlayerID,
 		const FLudeoRoom& LudeoRoom,
 		const FLudeoSaveGameSpecification& SaveGameSpecification,
 		FLudeoWritableObject::WritableObjectMapType& ObjectMap

@@ -632,7 +632,6 @@ const FLudeoSaveGameActorCompomnentData* FLudeoObjectStateManager::GetSaveGameAc
 bool FLudeoObjectStateManager::SaveWorld
 (
 	const UObject* WorldContextObject,
-	const TOptional<FString> LudeoCreatorPlayerID,
 	const FLudeoRoom& LudeoRoom,
 	const FLudeoSaveGameSpecification& SaveGameSpecification,
 	FLudeoWritableObject::WritableObjectMapType& ObjectMap
@@ -738,17 +737,10 @@ bool FLudeoObjectStateManager::SaveWorld
 
 		if (const APlayerState* AssociatedPlayer = GetObjectAssociatedPlayerState(Object))
 		{
-			const bool bShouldReplacePlayerIDWithCreatorPlayerID =
-			(
-				(AssociatedPlayer->GetOwner() == World->GetFirstPlayerController()) &&
-				LudeoCreatorPlayerID.IsSet() &&
-				!LudeoCreatorPlayerID.GetValue().IsEmpty()
-			);
-
 			const FScopedWritableObjectBindPlayerGuard<FLudeoWritableObject> BindPlayerGuard
 			(
 				WritableObject,
-				(bShouldReplacePlayerIDWithCreatorPlayerID ? *LudeoCreatorPlayerID.GetValue() : *FString::FromInt(AssociatedPlayer->GetPlayerId()))
+				*FString::FromInt(AssociatedPlayer->GetPlayerId())
 			);
 
 			bIsAllDataWrittenSuccessfully = SaveObject();

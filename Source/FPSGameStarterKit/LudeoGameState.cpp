@@ -121,15 +121,7 @@ bool ALudeoGameState::ReportPlayerAction(const APlayerState* PlayerState, const 
 	{
 		FLudeoRoomWriterSendActionParameters SendActionParameters;
 		SendActionParameters.ActionName = Enum->GetNameStringByValue(static_cast<int64>(PlayerAction));
-
-		if(IsLudeoGame())
-		{
-			SendActionParameters.PlayerID = LudeoCreatorPlayerID.GetValue();
-		}
-		else
-		{
-			SendActionParameters.PlayerID = FString::FromInt(PlayerState->GetPlayerId());
-		}
+		SendActionParameters.PlayerID = FString::FromInt(PlayerState->GetPlayerId());
 
 		Result = LudeoRoom->GetRoomWriter().SendAction(SendActionParameters);
 
@@ -200,6 +192,8 @@ void ALudeoGameState::OnLudeoSessionActivated(const FLudeoResult& Result, const 
 		if (const FLudeo* Ludeo = FLudeo::GetLudeoByLudeoHandle(GameInstance->GetPendingLudeoHandle()))
 		{
 			OnLudeoSelected(*Ludeo);
+
+			GameInstance->ReleasePendingLudeo();
 		}
 		else
 		{
@@ -278,6 +272,10 @@ void ALudeoGameState::OnLudeoRoomOpened(const FLudeoResult& Result, const FLudeo
 
 void ALudeoGameState::OnLudeoSelected(const FLudeo& Ludeo)
 {
+	ReplicatedLudeoRoomInformation.RoomInformation.LudeoID = Ludeo.GetLudeoID();
+
+	LoadLudeo(Ludeo);
+
 	OpenRoom(FGuid::NewGuid().ToString(), Ludeo.GetLudeoID());
 }
 
@@ -321,11 +319,11 @@ void ALudeoGameState::OnRep_LudeoRoomInformation()
 
 const APlayerState* ALudeoGameState::GetLocalPlayerState() const
 {
-	if (UWorld* World = GetWorld())
+	for (const APlayerState* PlayerState : PlayerArray)
 	{
-		for (FConstPlayerControllerIterator Itr = World->GetPlayerControllerIterator(); Itr; ++Itr)
+		if (PlayerState != nullptr)
 		{
-			if (APlayerController* PlayerController = Itr->Get())
+			if (APlayerController* PlayerController = Cast<APlayerController>(PlayerState->GetOwner()))
 			{
 				if (PlayerController->IsLocalController())
 				{
@@ -454,11 +452,11 @@ void ALudeoGameState::TickSaveObjectState()
 {
 	if (const FLudeoRoom* Room = FLudeoRoom::GetRoomByRoomHandle(LudeoRoomHandle))
 	{
-		FLudeoObjectStateManager::SaveWorld(this, LudeoCreatorPlayerID, *Room, SaveGameSpecification, ObjectMap);
+		FLudeoObjectStateManager::SaveWorld(this, *Room, SaveGameSpecification, ObjectMap);
 	}
 }
 
-void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
+void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 {
 	UWorld* World = GetWorld();
 	check(World != nullptr);
@@ -597,37 +595,20 @@ void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
 	}
 
 	// Step five: Possess player character and turn other player into a bot
+	for (APlayerState* PlayerState : PlayerArray)
 	{
-		for (APlayerState* PlayerState : PlayerArray)
+		if (PlayerState != nullptr)
 		{
-			if (PlayerState != nullptr)
+			if (ALudeoPlayerController* LudeoPlayerController = Cast<ALudeoPlayerController>(PlayerState->GetOwner()))
 			{
-				if (ALudeoPlayerController* LudeoPlayerController = Cast<ALudeoPlayerController>(PlayerState->GetOwner()))
+				if (APawn* CharacterPawn = LudeoPlayerController->GetCharacterPawn())
 				{
-					if (APawn* CharacterPawn = LudeoPlayerController->GetCharacterPawn())
-					{
-						LudeoPlayerController->PlayerState->SetIsABot(LudeoPlayerController != World->GetFirstPlayerController());
+					LudeoPlayerController->PlayerState->SetIsABot(LudeoPlayerController != World->GetFirstPlayerController());
 
-						LudeoPlayerController->Possess(CharacterPawn);
-					}
+					LudeoPlayerController->Possess(CharacterPawn);
 				}
 			}
 		}
-	}
-}
-
-void ALudeoGameState::ConditionalLoadLudeo()
-{
-	ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
-	check(GameInstance != nullptr);
-
-	if(const FLudeo* Ludeo = FLudeo::GetLudeoByLudeoHandle(GameInstance->GetPendingLudeoHandle()))
-	{
-		LudeoCreatorPlayerID = Ludeo->GetCreatorPlayerID();
-
-		ProcessLudeoData(*Ludeo);
-		
-		GameInstance->ReleasePendingLudeo();
 	}
 }
 

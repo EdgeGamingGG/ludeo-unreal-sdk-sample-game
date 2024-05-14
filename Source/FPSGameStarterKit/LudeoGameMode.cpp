@@ -12,16 +12,6 @@ void ALudeoGameMode::HandleMatchIsWaitingToStart()
 	}
 }
 
-void ALudeoGameMode::HandleMatchHasStarted()
-{
-	if (ALudeoGameState* LudeoGameState = GetGameState<ALudeoGameState>())
-	{
-		LudeoGameState->ConditionalLoadLudeo();
-	}
-
-	Super::HandleMatchHasStarted();
-}
-
 bool ALudeoGameMode::ReadyToStartMatch_Implementation()
 {
 	UWorld* World = GetWorld();

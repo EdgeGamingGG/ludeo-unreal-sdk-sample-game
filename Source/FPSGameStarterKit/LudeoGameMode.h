@@ -11,6 +11,5 @@ class ALudeoGameMode : public AGameMode
 
 private:
 	virtual void HandleMatchIsWaitingToStart() override;
-	virtual void HandleMatchHasStarted() override;
 	virtual bool ReadyToStartMatch_Implementation() override;
 };

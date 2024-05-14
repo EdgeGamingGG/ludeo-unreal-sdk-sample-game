@@ -262,24 +262,35 @@ bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FText& Da
 	{
 		LudeoText.SourceString = Data.ToString();
 	}
+	else if (Data.IsFromStringTable())
+	{
+		FTextInspector::GetTableIdAndKey(Data, LudeoText.StringTableID, LudeoText.Key);	
+	}
 	else
 	{
-		if (Data.IsFromStringTable())
-		{
-			FTextInspector::GetTableIdAndKey(Data, LudeoText.StringTableID, LudeoText.Key);
-		}
-		else
+		// Save the namespace
 		{
 			TOptional<FString> Namespace = FTextInspector::GetNamespace(Data);
+
+			if (Namespace.IsSet())
+			{
+				LudeoText.Namespace = MoveTemp(Namespace.GetValue());
+			}
+		}
+
+		// Save the key
+		{
 			TOptional<FString> Key = FTextInspector::GetKey(Data);
 
-			LudeoText.Namespace = MoveTemp(Namespace.GetValue());
-			LudeoText.Key = MoveTemp(Key.GetValue());
-
-			if (const FString* SourceString = FTextInspector::GetSourceString(Data))
+			if(Key.IsSet())
 			{
-				LudeoText.SourceString = *SourceString;
+				LudeoText.Key = MoveTemp(Key.GetValue());
 			}
+		}
+
+		if (const FString* SourceString = FTextInspector::GetSourceString(Data))
+		{
+			LudeoText.SourceString = *SourceString;
 		}
 	}
 

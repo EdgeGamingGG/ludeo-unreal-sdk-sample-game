@@ -62,14 +62,14 @@ public:
 
 	virtual void HandleMatchIsWaitingToStart() override;
 
-	void ConditionalLoadLudeo();
+	void LoadLudeo(const FLudeo& Ludeo);
 
 	UFUNCTION(BlueprintCallable)
 	bool ReportPlayerAction(const APlayerState* PlayerState, const ELudeoPlayerAction PlayerAction) const;
 
 	FORCEINLINE bool IsLudeoGame() const
 	{
-		return LudeoCreatorPlayerID.IsSet();
+		return !ReplicatedLudeoRoomInformation.RoomInformation.LudeoID.IsEmpty();
 	}
 
 	bool IsSessionReady() const;
@@ -79,8 +79,6 @@ private:
 	void OnRep_LudeoRoomInformation();
 
 	void TickSaveObjectState();
-
-	void ProcessLudeoData(const FLudeo& Ludeo);
 
 	UFUNCTION
 	(
@@ -144,7 +142,6 @@ private:
 	} LudeoGameSessionInitializationState;
 
 private:
-	TOptional<FString> LudeoCreatorPlayerID;
 	FLudeoWritableObject::WritableObjectMapType ObjectMap;
 
 private:
