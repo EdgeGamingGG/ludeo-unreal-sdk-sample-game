@@ -27,14 +27,6 @@ enum class ELudeoPlayerAction : uint8
 };
 Expose_TNameOf(ELudeoPlayerAction);
 
-UENUM()
-enum class ELudeoRoomState : uint8
-{
-	NotReady,
-	Joinable,
-	NotJoinable
-};
-
 USTRUCT()
 struct FReplicatedLudeoRoomInformation
 {
@@ -70,18 +62,25 @@ public:
 
 	virtual void HandleMatchIsWaitingToStart() override;
 
-	void TickSaveObjectState();
-	void ProcessLudeoData(const FLudeo& Ludeo);
 	void ConditionalLoadLudeo();
 
 	UFUNCTION(BlueprintCallable)
 	bool ReportPlayerAction(const APlayerState* PlayerState, const ELudeoPlayerAction PlayerAction) const;
+
+	FORCEINLINE bool IsLudeoGame() const
+	{
+		return LudeoCreatorPlayerID.IsSet();
+	}
 
 	bool IsSessionReady() const;
 	
 private:
 	UFUNCTION()
 	void OnRep_LudeoRoomInformation();
+
+	void TickSaveObjectState();
+
+	void ProcessLudeoData(const FLudeo& Ludeo);
 
 	UFUNCTION
 	(
@@ -106,11 +105,6 @@ private:
 		)
 	)
 	static bool ReportLocalPlayerAction(const UObject* WorldContextObject, const ELudeoPlayerAction PlayerAction);
-
-	FORCEINLINE bool IsLudeoGame() const
-	{
-		return LudeoCreatorPlayerID.IsSet();
-	}
 
 	const APlayerState* GetLocalPlayerState() const;
 
