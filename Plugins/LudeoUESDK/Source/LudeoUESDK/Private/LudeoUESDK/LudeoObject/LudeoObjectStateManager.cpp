@@ -748,7 +748,7 @@ bool FLudeoObjectStateManager::SaveWorld
 			const FScopedWritableObjectBindPlayerGuard<FLudeoWritableObject> BindPlayerGuard
 			(
 				WritableObject,
-				(bShouldReplacePlayerIDWithCreatorPlayerID ? *LudeoCreatorPlayerID.GetValue() : *AssociatedPlayer->GetUniqueId().ToString())
+				(bShouldReplacePlayerIDWithCreatorPlayerID ? *LudeoCreatorPlayerID.GetValue() : *FString::FromInt(AssociatedPlayer->GetPlayerId()))
 			);
 
 			bIsAllDataWrittenSuccessfully = SaveObject();

@@ -3,6 +3,7 @@
 #include "LudeoUESDK/LudeoScopedGuard.h"
 
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/GameSession.h"
 #include "Engine/LevelScriptActor.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -20,9 +21,28 @@ ALudeoGameState::ALudeoGameState() :
 	
 	bAllowTickBeforeBeginPlay = false;
 
-	FLudeoSaveGameActorData& SaveGameActorData = SaveGameSpecification.SaveGameActorDataCollection.AddDefaulted_GetRef();
-	SaveGameActorData.ActorFilter.MatchingActorClass = ALevelScriptActor::StaticClass();
-	SaveGameActorData.Strategy = ELudeoSaveGameStrategy::Reconcile;
+	// By default save level script actor - Important for figuring out the level name and variables in the level script blueprint
+	{
+		FLudeoSaveGameActorData& SaveGameActorData = SaveGameSpecification.SaveGameActorDataCollection.AddDefaulted_GetRef();
+		SaveGameActorData.ActorFilter.MatchingActorClass = ALevelScriptActor::StaticClass();
+		SaveGameActorData.Strategy = ELudeoSaveGameStrategy::Reconcile;
+	}
+
+	// By default save player controller - Important for identifying players
+	{
+		FLudeoSaveGameActorData& SaveGameActorData = SaveGameSpecification.SaveGameActorDataCollection.AddDefaulted_GetRef();
+		SaveGameActorData.ActorFilter.MatchingActorClass = APlayerController::StaticClass();
+		SaveGameActorData.AdditionalSaveGamePropertyNameCollection.Add(TEXT("PlayerState"));
+		SaveGameActorData.Strategy = ELudeoSaveGameStrategy::Reconcile;
+	}
+
+	// By default save player state - Important for identifying players
+	{
+		FLudeoSaveGameActorData& SaveGameActorData = SaveGameSpecification.SaveGameActorDataCollection.AddDefaulted_GetRef();
+		SaveGameActorData.ActorFilter.MatchingActorClass = APlayerState::StaticClass();
+		SaveGameActorData.AdditionalSaveGamePropertyNameCollection.Add(TEXT("PlayerId"));
+		SaveGameActorData.Strategy = ELudeoSaveGameStrategy::Reconcile;
+	}
 }
 
 void ALudeoGameState::BeginPlay()
@@ -108,7 +128,7 @@ bool ALudeoGameState::ReportPlayerAction(const APlayerState* PlayerState, const 
 		}
 		else
 		{
-			SendActionParameters.PlayerID = PlayerState->GetUniqueId().ToString();
+			SendActionParameters.PlayerID = FString::FromInt(PlayerState->GetPlayerId());
 		}
 
 		Result = LudeoRoom->GetRoomWriter().SendAction(SendActionParameters);
@@ -368,7 +388,7 @@ void ALudeoGameState::AddPlayer(FLudeoRoom& LudeoRoom)
 	LudeoGameSessionInitializationState = ELudeoGameSessionInitializationState::PlayerSetupOnTheFly;
 
 	FLudeoRoomAddPlayerParameters AddPlayerParameters;
-	AddPlayerParameters.PlayerID = PlayerState->GetUniqueId().ToString();
+	AddPlayerParameters.PlayerID = FString::FromInt(PlayerState->GetPlayerId());
 
 	LudeoRoom.AddPlayer
 	(
@@ -436,19 +456,6 @@ void ALudeoGameState::TickSaveObjectState()
 	if (const FLudeoRoom* Room = FLudeoRoom::GetRoomByRoomHandle(LudeoRoomHandle))
 	{
 		FLudeoObjectStateManager::SaveWorld(this, LudeoCreatorPlayerID, *Room, SaveGameSpecification, ObjectMap);
-
-		for (APlayerState* PlayerState : PlayerArray)
-		{
-			if(PlayerState != nullptr)
-			{
-				if (const FLudeoWritableObject* WritableObject = ObjectMap.Find(PlayerState))
-				{
-					const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoWritableObject> EnterObjectGuard(*WritableObject);
-
-					WritableObject->WriteData(TEXT("PlayerID"), PlayerState->GetUniqueId().ToString());
-				}
-			}
-		}
 	}
 }
 
@@ -502,11 +509,11 @@ void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
 			{
 				const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
 
-				FString PlayerID;
-				const bool bHasRead = ReadableObject.ReadData(TEXT("PlayerID"), PlayerID);
+				int32 PlayerID;
+				const bool bHasRead = ReadableObject.ReadData(TEXT("PlayerId"), PlayerID);
 				check(bHasRead);
 
-				if (PlayerID == Ludeo.GetCreatorPlayerID())
+				if (FString::FromInt(PlayerID) == Ludeo.GetCreatorPlayerID())
 				{
 					return static_cast<FLudeoObjectHandle>(ReadableObject);
 				}
@@ -570,15 +577,6 @@ void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
 					check(PlayerController != nullptr);
 					check(PlayerController->PlayerState != nullptr);
 
-					FString PlayerID;
-					{
-						const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(PlayerStateObjectInformation.ReadableObject);
-
-						const bool bHasRead = PlayerStateObjectInformation.ReadableObject.ReadData(TEXT("PlayerID"), PlayerID);
-						check(bHasRead && !PlayerID.IsEmpty());
-					}
-					PlayerController->PlayerState->SetUniqueId(MakeShared<FUniqueNetIdString>(PlayerID));
-
 					RestoreWorldObjectMap.Emplace(ReadableObject, PlayerController);
 					RestoreWorldObjectMap.Emplace(PlayerStateObjectInformation.ReadableObject, PlayerController->PlayerState);
 				}
@@ -599,17 +597,20 @@ void ALudeoGameState::ProcessLudeoData(const FLudeo& Ludeo)
 		check(bHasWorldRestored);
 	}
 
-	for (APlayerState* PlayerState : PlayerArray)
+	// Step five: Possess player character and turn other player into a bot
 	{
-		if (PlayerState != nullptr)
+		for (APlayerState* PlayerState : PlayerArray)
 		{
-			if (ALudeoPlayerController* LudeoPlayerController = Cast<ALudeoPlayerController>(PlayerState->GetOwner()))
+			if (PlayerState != nullptr)
 			{
-				if (APawn* CharacterPawn = LudeoPlayerController->GetCharacterPawn())
+				if (ALudeoPlayerController* LudeoPlayerController = Cast<ALudeoPlayerController>(PlayerState->GetOwner()))
 				{
-					LudeoPlayerController->PlayerState->SetIsABot(LudeoPlayerController != World->GetFirstPlayerController());
+					if (APawn* CharacterPawn = LudeoPlayerController->GetCharacterPawn())
+					{
+						LudeoPlayerController->PlayerState->SetIsABot(LudeoPlayerController != World->GetFirstPlayerController());
 
-					LudeoPlayerController->Possess(CharacterPawn);
+						LudeoPlayerController->Possess(CharacterPawn);
+					}
 				}
 			}
 		}
