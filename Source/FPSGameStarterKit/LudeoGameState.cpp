@@ -370,8 +370,6 @@ void ALudeoGameState::CloseRoom()
 		{
 			Session->GetOnRoomReadyDelegate().RemoveAll(this);
 
-			Session->GetOnRoomReadyDelegate().AddUObject(this, &ALudeoGameState::OnLudeoRoomReady);
-
 			FLudeoSessionCloseRoomParameters CloseRoomParameters;
 			CloseRoomParameters.RoomHandle = LudeoRoomHandle;
 
@@ -384,6 +382,7 @@ void ALudeoGameState::AddPlayer(FLudeoRoom& LudeoRoom)
 {
 	const APlayerState* PlayerState = GetLocalPlayerState();
 	check(PlayerState != nullptr);
+	check(PlayerState->GetPlayerId() != PlayerState->GetClass()->GetDefaultObject<APlayerState>()->GetPlayerId());
 
 	LudeoGameSessionInitializationState = ELudeoGameSessionInitializationState::PlayerSetupOnTheFly;
 
