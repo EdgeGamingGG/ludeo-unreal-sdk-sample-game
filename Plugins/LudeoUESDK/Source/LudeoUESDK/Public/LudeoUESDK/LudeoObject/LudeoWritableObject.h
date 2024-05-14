@@ -68,6 +68,7 @@ public:
 	bool WriteData(const TCHAR* AttributeName, const TCHAR* Data) const;
 	bool WriteData(const TCHAR* AttributeName, const FString& Data) const;
 	bool WriteData(const TCHAR* AttributeName, const FName& Data) const;
+	bool WriteData(const TCHAR* AttributeName, const FText& Data) const;
 	bool WriteData(const TCHAR* AttributeName, UClass* Data) const;
 
 	bool WriteData(const TCHAR* AttributeName, const FLudeoObjectHandle& LudeoObjectHandle) const;

@@ -272,6 +272,31 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FName& Data) con
 	return bHasReadData;
 }
 
+bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FText& Data) const
+{
+	FLudeoText LudeoText;
+
+	const bool bHasReadData = ReadData(AttributeName, FLudeoText::StaticStruct(), &LudeoText, {});
+
+	if (bHasReadData)
+	{
+		if (!LudeoText.StringTableID.IsNone() && !LudeoText.Key.IsEmpty())
+		{
+			Data = FText::FromStringTable(LudeoText.StringTableID, LudeoText.Key);
+		}
+		else if(!LudeoText.Namespace.IsEmpty() && !LudeoText.Key.IsEmpty())
+		{
+			Data = FInternationalization::ForUseOnlyByLocMacroAndGraphNodeTextLiterals_CreateText(*LudeoText.Namespace, *LudeoText.Key, *LudeoText.SourceString);
+		}
+		else
+		{
+			Data = FText::FromString(LudeoText.SourceString);
+		}
+	}
+
+	return bHasReadData;
+}
+
 bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, UClass*& Data) const
 {
 	FString ClassName;
@@ -430,6 +455,12 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* Prop
 	else if (const FNameProperty* NameProperty = CastField<FNameProperty>(Property))
 	{
 		FName& Data = *NameProperty->GetPropertyValuePtr_InContainer(const_cast<void*>(PropertyContainer));
+
+		bIsDataReadSuccessfully = ReadData(AttributeName, Data);
+	}
+	else if (const FTextProperty* TextProperty = CastField<FTextProperty>(Property))
+	{
+		FText& Data = *TextProperty->GetPropertyValuePtr_InContainer(const_cast<void*>(PropertyContainer));
 
 		bIsDataReadSuccessfully = ReadData(AttributeName, Data);
 	}

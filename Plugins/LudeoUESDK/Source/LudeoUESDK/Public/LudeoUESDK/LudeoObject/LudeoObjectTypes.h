@@ -1,5 +1,7 @@
 #pragma once
 
+#include "CoreMinimal.h"
+
 #include <Ludeo/DataTypesCommon.h>
 
 #include "LudeoObjectTypes.generated.h"
@@ -63,6 +65,27 @@ USTRUCT()
 struct FLudeoTransform : public FTransform
 {
 	GENERATED_BODY();
+};
+
+USTRUCT()
+struct FLudeoText
+{
+	GENERATED_BODY();
+
+	UPROPERTY(Transient)
+	FText Text;
+
+	UPROPERTY(Transient, SaveGame)
+	FString Namespace;
+
+	UPROPERTY(Transient, SaveGame)
+	FName StringTableID;
+
+	UPROPERTY(Transient, SaveGame)
+	FString Key;
+
+	UPROPERTY(Transient, SaveGame)
+	FString SourceString;
 };
 
 struct FLudeoPropertyFilter

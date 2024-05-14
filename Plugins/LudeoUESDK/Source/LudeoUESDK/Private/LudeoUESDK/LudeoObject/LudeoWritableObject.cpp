@@ -254,6 +254,38 @@ bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FName& Da
 	return WriteData(AttributeName, *Data.ToString());
 }
 
+bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FText& Data) const
+{
+	FLudeoText LudeoText;
+
+	if (Data.IsCultureInvariant())
+	{
+		LudeoText.SourceString = Data.ToString();
+	}
+	else
+	{
+		if (Data.IsFromStringTable())
+		{
+			FTextInspector::GetTableIdAndKey(Data, LudeoText.StringTableID, LudeoText.Key);
+		}
+		else
+		{
+			TOptional<FString> Namespace = FTextInspector::GetNamespace(Data);
+			TOptional<FString> Key = FTextInspector::GetKey(Data);
+
+			LudeoText.Namespace = MoveTemp(Namespace.GetValue());
+			LudeoText.Key = MoveTemp(Key.GetValue());
+
+			if (const FString* SourceString = FTextInspector::GetSourceString(Data))
+			{
+				LudeoText.SourceString = *SourceString;
+			}
+		}
+	}
+
+	return WriteData(AttributeName, FLudeoText::StaticStruct(), &LudeoText, {});
+}
+
 bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, UClass* Data) const
 {
 	const FString ClassName = (Data != nullptr ? Data->GetName() : TEXT(""));
@@ -389,6 +421,12 @@ bool FLudeoWritableObject::WriteData
 	else if (const FNameProperty* NameProperty = CastField<FNameProperty>(Property))
 	{
 		const FName& Data = NameProperty->GetPropertyValue_InContainer(PropertyContainer);
+
+		bIsDataWrittenSuccessfully = WriteData(AttributeName, Data);
+	}
+	else if (const FTextProperty* TextProperty = CastField<FTextProperty>(Property))
+	{
+		const FText& Data = TextProperty->GetPropertyValue_InContainer(PropertyContainer);
 
 		bIsDataWrittenSuccessfully = WriteData(AttributeName, Data);
 	}
