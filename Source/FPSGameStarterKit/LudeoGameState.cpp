@@ -305,9 +305,17 @@ void ALudeoGameState::ConditionalOpenRoom()
 		TimerHandle,
 		FTimerDelegate::CreateWeakLambda(this, [&]()
 		{
-			const bool bHasPlayerState = (GetLocalPlayerState() != nullptr);
+			const bool bHasReplicatedPlayerState = [&]()
+			{
+				if (const APlayerState* LocalPlayerState = GetLocalPlayerState())
+				{
+					return (LocalPlayerState->GetPlayerId() != LocalPlayerState->GetClass()->GetDefaultObject<APlayerState>()->GetPlayerId());
+				}
 
-			if (bHasPlayerState)
+				return false;
+			}();
+			
+			if (bHasReplicatedPlayerState)
 			{
 				if(HasAuthority())
 				{
