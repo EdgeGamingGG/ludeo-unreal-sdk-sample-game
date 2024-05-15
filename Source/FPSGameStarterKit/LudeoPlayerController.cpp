@@ -14,6 +14,8 @@ ALudeoPlayerController::ALudeoPlayerController() :
 
 void ALudeoPlayerController::Tick(float DeltaSeconds)
 {
+	Super::Tick(DeltaSeconds);
+
 	if (!bIsPlayerReady)
 	{
 		if (IsGameFullyLoaded())
