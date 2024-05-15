@@ -179,6 +179,23 @@ FLudeoResult FLudeoManager::Finalize()
 	return ludeo_Shutdown();
 }
 
+bool FLudeoManager::ExecuteLudeoCommand(const TCHAR* CommandName, const TCHAR* CommandValue) const
+{
+	const FLudeoResult Result = ludeo_Command(TCHAR_TO_ANSI(CommandName), TCHAR_TO_ANSI(CommandValue));
+
+	return Result.IsSuccessful();
+}
+
+bool FLudeoManager::SetEnableOverlay(const bool bIsEnabled) const
+{
+	return ExecuteLudeoCommand(TEXT("overlay-enabled"), (bIsEnabled ? TEXT("1") : TEXT("0")));
+}
+
+bool FLudeoManager::SetEnableMonitoring(const bool bIsEnabled) const
+{
+	return ExecuteLudeoCommand(TEXT("monitor-enabled"), (bIsEnabled ? TEXT("1") : TEXT("0")));
+}
+
 FLudeoResult FLudeoManager::SetLoggingCallback(const LogCallbackType InLogCallback)
 {
 	FLudeoResult Result(LudeoResult::Unknown);
