@@ -294,6 +294,8 @@ void ALudeoGameState::OnLudeoRoomReady(const FLudeoSessionHandle& SessionHandle,
 
 void ALudeoGameState::ConditionalOpenRoom()
 {
+	LudeoGameSessionInitializationState = ELudeoGameSessionInitializationState::RoomSetupOnTheFly;
+
 	UWorld* World = GetWorld();
 	check(World != nullptr);
 
@@ -373,8 +375,6 @@ void ALudeoGameState::OpenRoom(const FString& RoomID, const FString& LudeoID)
 {
 	if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(LudeoSessionHandle))
 	{
-		LudeoGameSessionInitializationState = ELudeoGameSessionInitializationState::RoomSetupOnTheFly;
-
 		Session->GetOnRoomReadyDelegate().AddUObject(this, &ALudeoGameState::OnLudeoRoomReady);
 
 		FLudeoSessionOpenRoomParameters OpenRoomParameters;
