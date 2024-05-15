@@ -199,7 +199,7 @@ void ALudeoGameState::OnLudeoSessionActivated(const FLudeoResult& Result, const 
 		{
 			if (HasAuthority())
 			{
-				OpenRoom(FGuid::NewGuid().ToString(), FString());
+				ConditionalOpenRoom();
 			}
 			else
 			{
@@ -256,7 +256,10 @@ void ALudeoGameState::OnLudeoRoomOpened(const FLudeoResult& Result, const FLudeo
 			ReplicatedLudeoRoomInformation.bIsRoomResultReady = true;
 		}
 
-		AddPlayer(*LudeoRoom);
+		const APlayerState* PlayerState = GetLocalPlayerState();
+		check(PlayerState != nullptr);
+
+		AddPlayer(*PlayerState, *LudeoRoom);
 	}
 	else
 	{
@@ -289,6 +292,43 @@ void ALudeoGameState::OnLudeoRoomReady(const FLudeoSessionHandle& SessionHandle,
 	}
 }
 
+void ALudeoGameState::ConditionalOpenRoom()
+{
+	UWorld* World = GetWorld();
+	check(World != nullptr);
+
+	FTimerHandle TimerHandle;
+	World->GetTimerManager().SetTimer
+	(
+		TimerHandle,
+		FTimerDelegate::CreateWeakLambda(this, [&]()
+		{
+			const bool bHasPlayerState = (GetLocalPlayerState() != nullptr);
+
+			if (bHasPlayerState)
+			{
+				if(HasAuthority())
+				{
+					OpenRoom(FGuid::NewGuid().ToString(), FString());
+				}
+				else
+				{
+					check(!ReplicatedLudeoRoomInformation.RoomInformation.RoomID.IsEmpty());
+
+					OpenRoom(ReplicatedLudeoRoomInformation.RoomInformation.RoomID, ReplicatedLudeoRoomInformation.RoomInformation.LudeoID);
+				}
+			}
+			else
+			{
+				ConditionalOpenRoom();
+			}
+		}),
+		0.5f,
+		false,
+		0.0f
+	);
+}
+
 void ALudeoGameState::OnRep_LudeoRoomInformation()
 {
 	if (
@@ -300,13 +340,7 @@ void ALudeoGameState::OnRep_LudeoRoomInformation()
 		{
 			if (ReplicatedLudeoRoomInformation.OpenRoomResult.IsSuccessful())
 			{
-				check(!ReplicatedLudeoRoomInformation.RoomInformation.RoomID.IsEmpty());
-				
-				OpenRoom
-				(
-					ReplicatedLudeoRoomInformation.RoomInformation.RoomID,
-					ReplicatedLudeoRoomInformation.RoomInformation.LudeoID
-				);
+				ConditionalOpenRoom();
 
 			}
 			else
@@ -376,16 +410,14 @@ void ALudeoGameState::CloseRoom()
 	}
 }
 
-void ALudeoGameState::AddPlayer(FLudeoRoom& LudeoRoom)
+void ALudeoGameState::AddPlayer(const APlayerState& PlayerState, FLudeoRoom& LudeoRoom)
 {
-	const APlayerState* PlayerState = GetLocalPlayerState();
-	check(PlayerState != nullptr);
-	check(PlayerState->GetPlayerId() != PlayerState->GetClass()->GetDefaultObject<APlayerState>()->GetPlayerId());
+	check(PlayerState.GetPlayerId() != PlayerState.GetClass()->GetDefaultObject<APlayerState>()->GetPlayerId());
 
 	LudeoGameSessionInitializationState = ELudeoGameSessionInitializationState::PlayerSetupOnTheFly;
 
 	FLudeoRoomAddPlayerParameters AddPlayerParameters;
-	AddPlayerParameters.PlayerID = FString::FromInt(PlayerState->GetPlayerId());
+	AddPlayerParameters.PlayerID = FString::FromInt(PlayerState.GetPlayerId());
 
 	LudeoRoom.AddPlayer
 	(

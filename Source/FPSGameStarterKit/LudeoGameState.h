@@ -119,10 +119,12 @@ private:
 	void OnLudeoRoomReady(const FLudeoSessionHandle& SessionHandle, const FLudeoRoomHandle& RoomHandle);
 
 private:
+	void ConditionalOpenRoom();
+
 	void SetupSession();
 	void OpenRoom(const FString& RoomID, const FString& LudeoID);
 	void CloseRoom();
-	void AddPlayer(FLudeoRoom& LudeoRoom);
+	void AddPlayer(const APlayerState& PlayerState, FLudeoRoom& LudeoRoom);
 	void BeginGamePlay();
 	void EndGamePlay();
 
