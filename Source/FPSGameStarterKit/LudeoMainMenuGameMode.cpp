@@ -1,70 +1,32 @@
 #include "LudeoMainMenuGameMode.h"
 
+#include "GameFramework/GameSession.h"
+
 #include "LudeoGameInstance.h"
-
-bool ALudeoMainMenuGameMode::IsLudeoSessionActivated() const
-{
-	return
-	(
-		SessionSetupResult.IsSet() &&
-		SessionSetupResult.GetValue() != nullptr
-	);
-}
-
-bool ALudeoMainMenuGameMode::OpenLudeoSessionGallery()
-{
-	if(SessionSetupResult.IsSet())
-	{
-		if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(SessionSetupResult.GetValue()))
-		{
-			const FLudeoResult Result = Session->OpenGallery();
-
-			return Result.IsSuccessful();
-		}
-	}
-
-	return false;
-}
-
 
 void ALudeoMainMenuGameMode::HandleMatchIsWaitingToStart()
 {
+	if (GameSession != nullptr)
+	{
+		GameSession->HandleMatchIsWaitingToStart();
+	}
+
 	ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
 	check(GameInstance != nullptr);
 
-	if (GameInstance->GetActiveSessionHandle() == nullptr)
+	if (!GameInstance->HasPendingSessionActivation())
 	{
-		GameInstance->SetupLudeoSession
-		(
-			FLudeoSessionOnActivatedDelegate::CreateWeakLambda
-			(
-				this,
-				[this]
-				(
-					const FLudeoResult& Result,
-					const FLudeoSessionHandle& SessionHandle,
-					const bool
-				)
-				{
-					if(Result.IsSuccessful())
-					{
-						SessionSetupResult.Emplace(SessionHandle);
-					}
-					else
-					{
-						SessionSetupResult.Emplace(nullptr);
-					}
-				}
-			)
-		);
-	}
-	else
-	{
-		SessionSetupResult.Emplace(GameInstance->GetActiveSessionHandle());
+		if (GameInstance->GetActiveLudeoSessionHandle(this) == nullptr)
+		{
+			GameInstance->SetupLudeoSession();
+		}
 	}
 }
 
 bool ALudeoMainMenuGameMode::ReadyToStartMatch_Implementation()
 {
-	return SessionSetupResult.IsSet();
+	ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
+	check(GameInstance != nullptr);
+
+	return !GameInstance->HasPendingSessionActivation();
 }

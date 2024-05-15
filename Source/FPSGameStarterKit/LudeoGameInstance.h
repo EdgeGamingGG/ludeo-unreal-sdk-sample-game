@@ -21,16 +21,38 @@ public:
 
 	virtual void Shutdown() override;
 
-	UFUNCTION(BlueprintCallable)
-	void LoadLudeo(const FString& LudeoID);
+	UFUNCTION
+	(
+		BlueprintCallable,
+		meta =
+		(
+			DefaultToSelf = "WorldContextObject",
+			HidePin = "WorldContextObject"
+		)
+	)
+	static bool OpenLudeoGallery(const FLudeoSessionHandle& LudeoSessionHandle);
+
+	UFUNCTION
+	(
+		BlueprintPure,
+		meta =
+		(
+			DefaultToSelf = "WorldContextObject",
+			HidePin = "WorldContextObject"
+		)
+	)
+	static FLudeoSessionHandle GetActiveLudeoSessionHandle(const UObject* WorldContextObject);
+
+	bool HasPendingSessionActivation() const
+	{
+		return (LudeoSessionHandle.IsSet() && LudeoSessionHandle.GetValue() == nullptr);
+	}
 
 	UFUNCTION(BlueprintCallable)
 	void LoadMainMenu();
 
-	const FLudeoSessionHandle& GetActiveSessionHandle() const
-	{
-		return ActiveLudeoSessionHandle;
-	}
+	UFUNCTION(BlueprintCallable)
+	void LoadLudeo(const FString& LudeoID);
 
 	const FLudeoHandle& GetPendingLudeoHandle() const
 	{
@@ -38,6 +60,7 @@ public:
 	}
 
 	void MarkLudeoAsPending(const FLudeo& Ludeo);
+
 	bool ReleasePendingLudeo();
 
 	bool SetupLudeoSession(const FLudeoSessionOnActivatedDelegate& OnSessionActivatedDelegate = FLudeoSessionOnActivatedDelegate());
@@ -66,8 +89,6 @@ private:
 		const FLudeoSessionOnActivatedDelegate OnSessionActivatedDelegate
 	);
 
-	void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& SessionHandle);
-
 private:
 	int32 GameInstanceRegistrationID;
 
@@ -78,7 +99,8 @@ private:
 	FDelegateHandle TickDelegateHandle;
 
 private:
-	FLudeoSessionHandle ActiveLudeoSessionHandle;
+	TOptional<FLudeoSessionHandle> LudeoSessionHandle;
+
 	FLudeoHandle PendingLudeoHandle;
 };
 

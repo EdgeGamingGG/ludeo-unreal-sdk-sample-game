@@ -458,7 +458,7 @@ void ALudeoGameState::SetupSession()
 	ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
 	check(GameInstance != nullptr);
 
-	if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(GameInstance->GetActiveSessionHandle()))
+	if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(GameInstance->GetActiveLudeoSessionHandle(this)))
 	{
 		OnLudeoSessionActivated(FLudeoResult::Success(), *LudeoSession, false);
 	}

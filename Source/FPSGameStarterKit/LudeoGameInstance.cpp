@@ -9,8 +9,7 @@
 #include "LudeoGameState.h"
 
 ULudeoGameInstance::ULudeoGameInstance() :
-	GameInstanceRegistrationID(INDEX_NONE),
-	ActiveLudeoSessionHandle(nullptr)
+	GameInstanceRegistrationID(INDEX_NONE)
 {
 
 }
@@ -50,12 +49,36 @@ void ULudeoGameInstance::Shutdown()
 	Super::Shutdown();
 }
 
+bool ULudeoGameInstance::OpenLudeoGallery(const FLudeoSessionHandle& LudeoSessionHandle)
+{
+	if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(LudeoSessionHandle))
+	{
+		const FLudeoResult Result = Session->OpenGallery();
+
+		return Result.IsSuccessful();
+	}
+
+	return false;
+}
+
+FLudeoSessionHandle ULudeoGameInstance::GetActiveLudeoSessionHandle(const UObject* WorldContextObject)
+{
+	check(WorldContextObject != nullptr);
+
+	UWorld* World = WorldContextObject->GetWorld();
+	check(World != nullptr);
+
+	ULudeoGameInstance* GameInstance = World->GetGameInstance<ULudeoGameInstance>();
+	check(GameInstance != nullptr);
+
+	return GameInstance->LudeoSessionHandle.Get(nullptr);
+}
+
 void ULudeoGameInstance::LoadLudeo(const FString& LudeoID)
 {
-	if (ActiveLudeoSessionHandle != nullptr)
-	{
-		OnLudeoSelected(ActiveLudeoSessionHandle, LudeoID);
-	}
+	check(LudeoSessionHandle.IsSet());
+
+	OnLudeoSelected(LudeoSessionHandle.GetValue(), LudeoID);
 }
 
 void ULudeoGameInstance::LoadMainMenu()
@@ -88,18 +111,14 @@ void ULudeoGameInstance::OnLudeoSessionActivated
 {
 	if (Result.IsSuccessful())
 	{
-		ActiveLudeoSessionHandle = SessionHandle;
+		LudeoSessionHandle = SessionHandle;
+	}
+	else
+	{
+		LudeoSessionHandle.Reset();
 	}
 
 	OnSessionActivatedDelegate.ExecuteIfBound(Result, SessionHandle, bIsLudeoSelected);
-}
-
-void ULudeoGameInstance::OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& SessionHandle)
-{
-	if (Result.IsSuccessful())
-	{
-		ActiveLudeoSessionHandle = nullptr;
-	}
 }
 
 FString ULudeoGameInstance::GetLudeoMapName(const FLudeo& Ludeo) const
@@ -174,7 +193,7 @@ bool ULudeoGameInstance::ReleasePendingLudeo()
 {
 	if(PendingLudeoHandle != nullptr)
 	{
-		FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(ActiveLudeoSessionHandle);
+		FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(GetActiveLudeoSessionHandle(this));
 		check(Session != nullptr);
 
 		if (Session->ReleaseLudeo(PendingLudeoHandle))
@@ -219,151 +238,156 @@ void ULudeoGameInstance::OnGameBackToMainMenuRequested(const FLudeoSessionHandle
 
 bool ULudeoGameInstance::SetupLudeoSession(const FLudeoSessionOnActivatedDelegate& OnSessionActivatedDelegate)
 {
-	WeakLudeoManager = FLudeoManager::GetInstance();
-	
-	const TSharedPtr<FLudeoManager> LudeoManager = WeakLudeoManager.Pin();
-	check(LudeoManager != nullptr);;
-	
-	FLudeoSessionManager& SessionManager = LudeoManager->GetSessionManager();
-	
-	const FCreateLudeoSessionParameters CreateSessionParameters;
-	
-	if (FLudeoSession* Session = SessionManager.CreateSession(CreateSessionParameters))
+	if(!LudeoSessionHandle.IsSet())
 	{
-		Session->GetOnLudeoSelectedDelegate().AddUObject(this, &ULudeoGameInstance::OnLudeoSelected);
-		Session->GetOnPauseGameRequestedDelegate().AddUObject(this, &ULudeoGameInstance::OnPauseGameRequested);
-		Session->GetOnResumeGameRequestedDelegate().AddUObject(this, &ULudeoGameInstance::OnResumeGameRequested);
-		Session->GetOnGameBackToMenuRequestedDelegate().AddUObject(this, &ULudeoGameInstance::OnGameBackToMainMenuRequested);
-
-		FLudeoSessionActivateSessionParameters ActivateSessionParameters;
+		WeakLudeoManager = FLudeoManager::GetInstance();
+	
+		const TSharedPtr<FLudeoManager> LudeoManager = WeakLudeoManager.Pin();
+		check(LudeoManager != nullptr);;
+	
+		FLudeoSessionManager& SessionManager = LudeoManager->GetSessionManager();
+	
+		const FCreateLudeoSessionParameters CreateSessionParameters;
+	
+		if (FLudeoSession* Session = SessionManager.CreateSession(CreateSessionParameters))
 		{
-			ActivateSessionParameters.GameWindowHandle = [&]()
-			{
-				UWorld* World = GetWorld();
-				check(World != nullptr);
+			Session->GetOnLudeoSelectedDelegate().AddUObject(this, &ULudeoGameInstance::OnLudeoSelected);
+			Session->GetOnPauseGameRequestedDelegate().AddUObject(this, &ULudeoGameInstance::OnPauseGameRequested);
+			Session->GetOnResumeGameRequestedDelegate().AddUObject(this, &ULudeoGameInstance::OnResumeGameRequested);
+			Session->GetOnGameBackToMenuRequestedDelegate().AddUObject(this, &ULudeoGameInstance::OnGameBackToMainMenuRequested);
 
-				if (UGameViewportClient* GameViewport = World->GetGameViewport())
+			FLudeoSessionActivateSessionParameters ActivateSessionParameters;
+			{
+				ActivateSessionParameters.GameWindowHandle = [&]()
 				{
-					if (const TSharedPtr<SWindow> Window = GameViewport->GetWindow())
+					UWorld* World = GetWorld();
+					check(World != nullptr);
+
+					if (UGameViewportClient* GameViewport = World->GetGameViewport())
 					{
-						if (const TSharedPtr<FGenericWindow> NativeWindow = Window->GetNativeWindow())
+						if (const TSharedPtr<SWindow> Window = GameViewport->GetWindow())
 						{
-							return NativeWindow->GetOSWindowHandle();
+							if (const TSharedPtr<FGenericWindow> NativeWindow = Window->GetNativeWindow())
+							{
+								return NativeWindow->GetOSWindowHandle();
+							}
+						}
+					}
+			
+					return static_cast<void*>(nullptr);
+				}();
+
+				ActivateSessionParameters.ApiKey = []()
+				{
+					FString APIKey;
+
+					FParse::Value(FCommandLine::Get(), TEXT("APIKey="), APIKey);
+
+					if(APIKey.IsEmpty())
+					{
+						GConfig->GetString(TEXT("Ludeo.SessionActivate"), TEXT("APIKey"), APIKey, GGameIni);
+					}
+
+					return APIKey;
+				}();
+
+				ActivateSessionParameters.AuthenticationType = [&]()
+				{
+					static UEnum* Enum = FindObject<UEnum>(ANY_PACKAGE, TNameOf<ELudeoSessionAuthenticationType>::GetName(), true);
+
+					if (Enum != nullptr)
+					{
+						FString EnumString;
+						FParse::Value(FCommandLine::Get(), TEXT("AuthenticationType="), EnumString);
+
+						if(EnumString.IsEmpty())
+						{
+							GConfig->GetString(TEXT("Ludeo.SessionActivate"), TEXT("AuthenticationType"), EnumString, GGameIni);
+						}
+
+						if(!EnumString.IsEmpty())
+						{
+							return static_cast<ELudeoSessionAuthenticationType>(Enum->GetValueByNameString(EnumString));
+						}
+					}
+
+					return ELudeoSessionAuthenticationType::Steam;
+				}();
+		
+				if(ActivateSessionParameters.AuthenticationType == ELudeoSessionAuthenticationType::Steam)
+				{
+					FString& AuthenticationID = ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID;
+					FString& DisplayName = ActivateSessionParameters.SteamAuthenticationDetails.DisplayName;
+
+					if(IsDedicatedServerInstance())
+					{
+						FParse::Value(FCommandLine::Get(), TEXT("DedicatedServerAuthenticationID="), AuthenticationID);
+						FParse::Value(FCommandLine::Get(), TEXT("DedicatedServerDisplayName="), DisplayName);
+
+						if (AuthenticationID.IsEmpty() || DisplayName.IsEmpty())
+						{
+							GConfig->GetString
+							(
+								TEXT("Ludeo.SessionActivate"),
+								TEXT("DedicatedServerAuthenticationID"),
+								AuthenticationID,
+								GGameIni
+							);
+						
+							GConfig->GetString
+							(
+								TEXT("Ludeo.SessionActivate"),
+								TEXT("DedicatedServerDisplayName"),
+								ActivateSessionParameters.SteamAuthenticationDetails.DisplayName,
+								GGameIni
+							);
+						}
+					}
+					else
+					{
+						const FString AuthenticationIDKey = FString::Printf(TEXT("AuthenticationID_%d"), GameInstanceRegistrationID);
+						const FString DisplayNameKey = FString::Printf(TEXT("DisplayName_%d"), GameInstanceRegistrationID);
+
+						FParse::Value(FCommandLine::Get(), *AuthenticationIDKey, AuthenticationID);
+						FParse::Value(FCommandLine::Get(), *DisplayNameKey, DisplayName);
+
+						if (AuthenticationID.IsEmpty() || DisplayName.IsEmpty())
+						{
+							GConfig->GetString
+							(
+								TEXT("Ludeo.SessionActivate"),
+								*AuthenticationIDKey,
+								ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID,
+								GGameIni
+							);	
+
+							GConfig->GetString
+							(
+								TEXT("Ludeo.SessionActivate"),
+								*DisplayNameKey,
+								ActivateSessionParameters.SteamAuthenticationDetails.DisplayName,
+								GGameIni
+							);
 						}
 					}
 				}
-			
-				return static_cast<void*>(nullptr);
-			}();
-
-			ActivateSessionParameters.ApiKey = []()
-			{
-				FString APIKey;
-
-				FParse::Value(FCommandLine::Get(), TEXT("APIKey="), APIKey);
-
-				if(APIKey.IsEmpty())
-				{
-					GConfig->GetString(TEXT("Ludeo.SessionActivate"), TEXT("APIKey"), APIKey, GGameIni);
-				}
-
-				return APIKey;
-			}();
-
-			ActivateSessionParameters.AuthenticationType = [&]()
-			{
-				static UEnum* Enum = FindObject<UEnum>(ANY_PACKAGE, TNameOf<ELudeoSessionAuthenticationType>::GetName(), true);
-
-				if (Enum != nullptr)
-				{
-					FString EnumString;
-					FParse::Value(FCommandLine::Get(), TEXT("AuthenticationType="), EnumString);
-
-					if(EnumString.IsEmpty())
-					{
-						GConfig->GetString(TEXT("Ludeo.SessionActivate"), TEXT("AuthenticationType"), EnumString, GGameIni);
-					}
-
-					if(!EnumString.IsEmpty())
-					{
-						return static_cast<ELudeoSessionAuthenticationType>(Enum->GetValueByNameString(EnumString));
-					}
-				}
-
-				return ELudeoSessionAuthenticationType::Steam;
-			}();
-		
-			if(ActivateSessionParameters.AuthenticationType == ELudeoSessionAuthenticationType::Steam)
-			{
-				FString& AuthenticationID = ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID;
-				FString& DisplayName = ActivateSessionParameters.SteamAuthenticationDetails.DisplayName;
-
-				if(IsDedicatedServerInstance())
-				{
-					FParse::Value(FCommandLine::Get(), TEXT("DedicatedServerAuthenticationID="), AuthenticationID);
-					FParse::Value(FCommandLine::Get(), TEXT("DedicatedServerDisplayName="), DisplayName);
-
-					if (AuthenticationID.IsEmpty() || DisplayName.IsEmpty())
-					{
-						GConfig->GetString
-						(
-							TEXT("Ludeo.SessionActivate"),
-							TEXT("DedicatedServerAuthenticationID"),
-							AuthenticationID,
-							GGameIni
-						);
-						
-						GConfig->GetString
-						(
-							TEXT("Ludeo.SessionActivate"),
-							TEXT("DedicatedServerDisplayName"),
-							ActivateSessionParameters.SteamAuthenticationDetails.DisplayName,
-							GGameIni
-						);
-					}
-				}
-				else
-				{
-					const FString AuthenticationIDKey = FString::Printf(TEXT("AuthenticationID_%d"), GameInstanceRegistrationID);
-					const FString DisplayNameKey = FString::Printf(TEXT("DisplayName_%d"), GameInstanceRegistrationID);
-
-					FParse::Value(FCommandLine::Get(), *AuthenticationIDKey, AuthenticationID);
-					FParse::Value(FCommandLine::Get(), *DisplayNameKey, DisplayName);
-
-					if (AuthenticationID.IsEmpty() || DisplayName.IsEmpty())
-					{
-						GConfig->GetString
-						(
-							TEXT("Ludeo.SessionActivate"),
-							*AuthenticationIDKey,
-							ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID,
-							GGameIni
-						);	
-
-						GConfig->GetString
-						(
-							TEXT("Ludeo.SessionActivate"),
-							*DisplayNameKey,
-							ActivateSessionParameters.SteamAuthenticationDetails.DisplayName,
-							GGameIni
-						);
-					}
-				}
 			}
-		}
 
-		Session->Activate
-		(
-			ActivateSessionParameters,
-			FLudeoSessionOnActivatedDelegate::CreateUObject
+			Session->Activate
 			(
-				this,
-				&ULudeoGameInstance::OnLudeoSessionActivated,
-				OnSessionActivatedDelegate
-			)
-		);
+				ActivateSessionParameters,
+				FLudeoSessionOnActivatedDelegate::CreateUObject
+				(
+					this,
+					&ULudeoGameInstance::OnLudeoSessionActivated,
+					OnSessionActivatedDelegate
+				)
+			);
 	
-		return true;
+			LudeoSessionHandle = nullptr;
+
+			return true;
+		}
 	}
 	
 	return false;
@@ -371,16 +395,16 @@ bool ULudeoGameInstance::SetupLudeoSession(const FLudeoSessionOnActivatedDelegat
 
 void ULudeoGameInstance::DestoryLudeoSession(const FOnLudeoSessionDestroyedDelegate& OnSessionDestroyedDelegate)
 {
-	if (ActiveLudeoSessionHandle != nullptr)
+	if (LudeoSessionHandle.IsSet())
 	{
 		if (FLudeoSessionManager* SessionManager = FLudeoSessionManager::GetInstance())
 		{
 			FDestroyLudeoSessionParameters DestroySessionParamters;
-			DestroySessionParamters.SessionHandle = ActiveLudeoSessionHandle;
+			DestroySessionParamters.SessionHandle = LudeoSessionHandle.GetValue();
 
 			SessionManager->DestroySession(DestroySessionParamters, OnSessionDestroyedDelegate);
 		}
 
-		ActiveLudeoSessionHandle = nullptr;
+		LudeoSessionHandle.Reset();
 	}
 }
