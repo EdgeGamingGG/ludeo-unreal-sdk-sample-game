@@ -258,24 +258,7 @@ bool ULudeoGameInstance::SetupLudeoSession(const FLudeoSessionOnActivatedDelegat
 
 			FLudeoSessionActivateSessionParameters ActivateSessionParameters;
 			{
-				ActivateSessionParameters.GameWindowHandle = [&]()
-				{
-					UWorld* World = GetWorld();
-					check(World != nullptr);
-
-					if (UGameViewportClient* GameViewport = World->GetGameViewport())
-					{
-						if (const TSharedPtr<SWindow> Window = GameViewport->GetWindow())
-						{
-							if (const TSharedPtr<FGenericWindow> NativeWindow = Window->GetNativeWindow())
-							{
-								return NativeWindow->GetOSWindowHandle();
-							}
-						}
-					}
-			
-					return static_cast<void*>(nullptr);
-				}();
+				ActivateSessionParameters.GameWindowHandle = FLudeoGameWindowHandle::GetGameWindowHandleFromWorld(this);
 
 				ActivateSessionParameters.ApiKey = []()
 				{

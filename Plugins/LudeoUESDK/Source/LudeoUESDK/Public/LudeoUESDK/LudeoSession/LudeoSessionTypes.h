@@ -240,6 +240,28 @@ struct FLudeoGameWindowHandle
 		return NativeWindowHandle;
 	}
 
+	static FLudeoGameWindowHandle GetGameWindowHandleFromWorld(const UObject* WorldContextObject)
+	{
+		if (WorldContextObject != nullptr)
+		{
+			UWorld* World = WorldContextObject->GetWorld();
+			check(World != nullptr);
+
+			if (UGameViewportClient* GameViewport = World->GetGameViewport())
+			{
+				if (const TSharedPtr<SWindow> Window = GameViewport->GetWindow())
+				{
+					if (const TSharedPtr<FGenericWindow> NativeWindow = Window->GetNativeWindow())
+					{
+						return NativeWindow->GetOSWindowHandle();
+					}
+				}
+			}
+		}
+
+		return static_cast<void*>(nullptr);
+	}
+
 private:
 	void* NativeWindowHandle;
 };

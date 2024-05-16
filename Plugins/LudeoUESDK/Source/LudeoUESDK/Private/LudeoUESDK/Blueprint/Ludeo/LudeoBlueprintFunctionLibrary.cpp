@@ -27,18 +27,7 @@ bool ULudeoBlueprintFunctionLibrary::IsValidLudeoHandle(const FLudeoHandle& Lude
 	return (FLudeo::GetLudeoByLudeoHandle(LudeoHandle) != nullptr);
 }
 
-FLudeoGameWindowHandle ULudeoBlueprintFunctionLibrary::GetGameWindowHandle()
+FLudeoGameWindowHandle ULudeoBlueprintFunctionLibrary::GetGameWindowHandle(const UObject* WorldContextObject)
 {
-	if (GEngine != nullptr && GEngine->GameViewport != nullptr)
-	{
-		if (const TSharedPtr<SWindow> Window = GEngine->GameViewport->GetWindow())
-		{
-			if (const TSharedPtr<FGenericWindow> NativeWindow = Window->GetNativeWindow())
-			{
-				return NativeWindow->GetOSWindowHandle();
-			}
-		}
-	}
-
-	return nullptr;
+	return FLudeoGameWindowHandle::GetGameWindowHandleFromWorld(WorldContextObject);
 }

@@ -22,6 +22,16 @@ public:
 	UFUNCTION(BlueprintPure, meta = (Category = "Ludeo", DisplayName = "Is Valid Ludeo Handle"))
 	static bool IsValidLudeoHandle(const FLudeoHandle& LudeoHandle);
 
-	UFUNCTION(BlueprintPure, meta = (Category = "Ludeo", DisplayName = "Get Ludeo Game Window Handle"))
-	static FLudeoGameWindowHandle GetGameWindowHandle();
+	UFUNCTION
+	(
+		BlueprintPure,
+		meta =
+		(
+			Category = "Ludeo",
+			DisplayName = "Get Ludeo Game Window Handle",
+			DefaultToSelf = "WorldContextObject",
+			HidePin = "WorldContextObject"
+		)
+	)
+	static FLudeoGameWindowHandle GetGameWindowHandle(const UObject* WorldContextObject);
 };
