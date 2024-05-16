@@ -1,6 +1,7 @@
 #include "LudeoUESDK/LudeoManager/LudeoManager.h"
 
 #include "LudeoUESDK/LudeoUESDKModule.h"
+#include "LudeoUESDK/LudeoCallback/LudeoCallbackManager.h"
 
 ELogVerbosity::Type ConvertLudeoLogLevelToUnrealLogLevel(const LudeoLogLevel eLogLevel)
 {
@@ -112,6 +113,28 @@ TWeakPtr<FLudeoManager> FLudeoManager::GetInstance()
 	return nullptr;
 }
 
+bool FLudeoManager::ExecuteLudeoCommand(const TCHAR* CommandName, const TCHAR* CommandValue)
+{
+	const FLudeoResult Result = ludeo_Command(TCHAR_TO_ANSI(CommandName), TCHAR_TO_ANSI(CommandValue));
+
+	return Result.IsSuccessful();
+}
+
+bool FLudeoManager::SetEnableOverlay(const bool bIsEnabled)
+{
+	return ExecuteLudeoCommand(TEXT("overlay-enabled"), (bIsEnabled ? TEXT("1") : TEXT("0")));
+}
+
+bool FLudeoManager::SetEnableVideo(const bool bIsEnabled)
+{
+	return ExecuteLudeoCommand(TEXT("video-enabled"), (bIsEnabled ? TEXT("1") : TEXT("0")));
+}
+
+bool FLudeoManager::SetEnableMonitoring(const bool bIsEnabled)
+{
+	return ExecuteLudeoCommand(TEXT("monitor-enabled"), (bIsEnabled ? TEXT("1") : TEXT("0")));
+}
+
 void FLudeoManager::Tick()
 {
 	ludeo_Tick();
@@ -174,26 +197,11 @@ FLudeoResult FLudeoManager::Finalize()
 {
 	SessionManager.Finalize();
 
+	FLudeoCallbackManager::GetInstance().Finalize();
+
 	LogCallaback = nullptr;
 
 	return ludeo_Shutdown();
-}
-
-bool FLudeoManager::ExecuteLudeoCommand(const TCHAR* CommandName, const TCHAR* CommandValue) const
-{
-	const FLudeoResult Result = ludeo_Command(TCHAR_TO_ANSI(CommandName), TCHAR_TO_ANSI(CommandValue));
-
-	return Result.IsSuccessful();
-}
-
-bool FLudeoManager::SetEnableOverlay(const bool bIsEnabled) const
-{
-	return ExecuteLudeoCommand(TEXT("overlay-enabled"), (bIsEnabled ? TEXT("1") : TEXT("0")));
-}
-
-bool FLudeoManager::SetEnableMonitoring(const bool bIsEnabled) const
-{
-	return ExecuteLudeoCommand(TEXT("monitor-enabled"), (bIsEnabled ? TEXT("1") : TEXT("0")));
 }
 
 FLudeoResult FLudeoManager::SetLoggingCallback(const LogCallbackType InLogCallback)

@@ -49,13 +49,6 @@ public:
 	}
 
 private:
-	void OnAddPlayer(const LudeoRoomAddPlayerCallbackParams& AddPlayerCallbackParams);
-	static void StaticOnAddPlayer(const LudeoRoomAddPlayerCallbackParams* pAddPlayerCallbackParams);
-
-	void OnRemovePlayer(const LudeoRoomRemovePlayerCallbackParams& RemovePlayerCallbackParams);
-	static void StaticOnRemovePlayer(const LudeoRoomRemovePlayerCallbackParams* pRemovePlayerCallbackParams);
-
-private:
 	FLudeoRoomHandle RoomHandle;
 
 private:

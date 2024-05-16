@@ -1,12 +1,7 @@
 #include "LudeoUESDK/LudeoSession/LudeoSessionManager.h"
 
 #include "LudeoUESDK/LudeoManager/LudeoManager.h"
-
-struct FPendingDestroyLudeoSessionData
-{
-	FLudeoSessionHandle SessionHandle;
-	FOnLudeoSessionDestroyedDelegate OnLudeoSessionDestroyedDelegate;
-};
+#include "LudeoUESDK/LudeoCallback/LudeoCallbackManager.h"
 
 FLudeoSessionManager* FLudeoSessionManager::GetInstance()
 {
@@ -62,20 +57,52 @@ void FLudeoSessionManager::DestroySession
 (
 	const FDestroyLudeoSessionParameters& DestroyLudeoSessionParameters,
 	const FOnLudeoSessionDestroyedDelegate& OnLudeoSessionDestroyedDelegate
-) const
+)
 {
-	FPendingDestroyLudeoSessionData* PendingDestroyLudeoSessionData = new FPendingDestroyLudeoSessionData;
-	PendingDestroyLudeoSessionData->SessionHandle = DestroyLudeoSessionParameters.SessionHandle;
-	PendingDestroyLudeoSessionData->OnLudeoSessionDestroyedDelegate = OnLudeoSessionDestroyedDelegate;
-
 	const LudeoSessionReleaseParams SessionReleaseParams = Ludeo::create<LudeoSessionReleaseParams>();
 
 	ludeo_Session_Release
 	(
 		DestroyLudeoSessionParameters.SessionHandle,
 		&SessionReleaseParams,
-		PendingDestroyLudeoSessionData,
-		&FLudeoSessionManager::StaticOnSessionDestroyed
+		FLudeoCallbackManager::GetInstance().CreateCallback
+		(
+			[
+				SessionHandle = DestroyLudeoSessionParameters.SessionHandle,
+				OnLudeoSessionDestroyedDelegate
+			]
+			(const LudeoSessionReleaseCallbackParams& SessionReleaseCallbackParams)
+			{
+				if(FLudeoSessionManager* SessionManager = FLudeoSessionManager::GetInstance())
+				{
+					const FLudeoResult Result(SessionReleaseCallbackParams.resultCode);
+
+					if (Result.IsSuccessful())
+					{
+						const int32 SessionIndex = SessionManager->SessionCollection.IndexOfByPredicate([&](const FLudeoSession& Session)
+						{
+							return (static_cast<FLudeoSessionHandle>(Session) == SessionHandle);
+						});
+
+						// It may be deleted by other release call or destructor
+						if (SessionManager->SessionCollection.IsValidIndex(SessionIndex))
+						{
+							SessionManager->SessionCollection.RemoveAtSwap(SessionIndex);
+						}
+					}
+
+					OnLudeoSessionDestroyedDelegate.ExecuteIfBound
+					(
+						Result,
+						SessionHandle
+					);
+				}
+			}
+		),
+		[](const LudeoSessionReleaseCallbackParams* pSessionReleaseCallbackParams)
+		{
+			FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pSessionReleaseCallbackParams);
+		}
 	);
 }
 
@@ -170,48 +197,4 @@ FLudeoSession* FLudeoSessionManager::GetSessionBySessionHandle(const FLudeoSessi
 	}
 
 	return nullptr;
-}
-
-void FLudeoSessionManager::StaticOnSessionDestroyed(const LudeoSessionReleaseCallbackParams* pSessionReleaseCallbackParams)
-{
-	check(pSessionReleaseCallbackParams != nullptr);
-	check(pSessionReleaseCallbackParams->clientData != nullptr);
-
-	if (FPendingDestroyLudeoSessionData* PendingDestroyLudeoSessionData = static_cast<FPendingDestroyLudeoSessionData*>(pSessionReleaseCallbackParams->clientData))
-	{
-		if (FLudeoSessionManager* LudeoSessionManager = FLudeoSessionManager::GetInstance())
-		{
-			LudeoSessionManager->OnSessionDestroyed(*pSessionReleaseCallbackParams);
-		}
-
-		delete PendingDestroyLudeoSessionData;
-	}
-}
-
-void FLudeoSessionManager::OnSessionDestroyed(const LudeoSessionReleaseCallbackParams& SessionReleaseCallbackParams)
-{
-	if (FPendingDestroyLudeoSessionData* PendingDestroyLudeoSessionData = static_cast<FPendingDestroyLudeoSessionData*>(SessionReleaseCallbackParams.clientData))
-	{
-		const FLudeoResult Result(SessionReleaseCallbackParams.resultCode);
-
-		if (Result.IsSuccessful())
-		{
-			const int32 SessionIndex = SessionCollection.IndexOfByPredicate([&](const FLudeoSession& Session)
-			{
-				return (static_cast<FLudeoSessionHandle>(Session) == PendingDestroyLudeoSessionData->SessionHandle);
-			});
-
-			// It may be deleted by other release call or destructor
-			if (SessionCollection.IsValidIndex(SessionIndex))
-			{
-				SessionCollection.RemoveAtSwap(SessionIndex);
-			}
-		}
-
-		PendingDestroyLudeoSessionData->OnLudeoSessionDestroyedDelegate.ExecuteIfBound
-		(
-			Result,
-			PendingDestroyLudeoSessionData->SessionHandle
-		);
-	}
 }

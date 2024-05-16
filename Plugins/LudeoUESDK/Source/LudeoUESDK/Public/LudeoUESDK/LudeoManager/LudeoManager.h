@@ -15,6 +15,13 @@ public:
 
 	static TWeakPtr<FLudeoManager> GetInstance();
 
+	static bool ExecuteLudeoCommand(const TCHAR* CommandName, const TCHAR* CommandValue);
+
+	static bool SetEnableOverlay(const bool bIsEnabled);
+	static bool SetEnableVideo(const bool bIsEnabled);
+	static bool SetEnableMonitoring(const bool bIsEnabled);
+
+public:
 	FORCEINLINE FLudeoSessionManager& GetSessionManager()
 	{
 		return SessionManager;
@@ -24,11 +31,6 @@ public:
 
 	FLudeoResult Initialize(const FLudeoInitializationParameters& InitializationParameters);
 	FLudeoResult Finalize();
-
-	bool ExecuteLudeoCommand(const TCHAR* CommandName, const TCHAR* CommandValue) const;
-
-	bool SetEnableOverlay(const bool bIsEnabled) const;
-	bool SetEnableMonitoring(const bool bIsEnabled) const;
 
 	FLudeoResult SetLoggingCallback(const LogCallbackType InLogCallback);
 	FLudeoResult SetLogLevel(const FLudeoLogCategory& LogCategory, const ELogVerbosity::Type eLogLevel) const;

@@ -16,9 +16,15 @@ void ALudeoMainMenuGameMode::HandleMatchIsWaitingToStart()
 
 	if (!GameInstance->HasPendingSessionActivation())
 	{
-		if (GameInstance->GetActiveLudeoSessionHandle(this) == nullptr)
+		const bool bHasActiveLudeoSession = (GameInstance->GetActiveLudeoSessionHandle(this) != nullptr);
+
+		if (!bHasActiveLudeoSession)
 		{
 			GameInstance->SetupLudeoSession();
+		}
+		else
+		{
+			GameInstance->ReleasePendingLudeo();
 		}
 	}
 }

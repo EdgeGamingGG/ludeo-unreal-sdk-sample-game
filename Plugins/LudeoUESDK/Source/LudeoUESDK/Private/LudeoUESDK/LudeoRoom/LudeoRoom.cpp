@@ -3,23 +3,8 @@
 #include <Ludeo/Room.h>
 #include <Ludeo/Utils.h>
 
+#include "LudeoUESDK/LudeoCallback/LudeoCallbackManager.h"
 #include "LudeoUESDK/LudeoSession/LudeoSessionManager.h"
-
-struct FLudeoRoomPendingData
-{
-	FLudeoRoomHandle RoomHandle;
-};
-
-struct FLudeoRoomPendingAddPlayerData : public FLudeoRoomPendingData
-{
-	FLudeoRoomOnAddPlayerDelegate OnAddPlayerDelegate;
-};
-
-struct FPendingRemovePlayerData : public FLudeoRoomPendingData
-{
-	FLudeoPlayerHandle PlayerHandle;
-	FLudeoRoomOnRemovePlayerDelegate OnRemovePlayerDelegate;
-};
 
 FLudeoRoom::FLudeoRoom(const FLudeoRoomHandle& InRoomHandle, const FLudeoRoomWriterHandle& InRoomWriterHandle) :
 	RoomHandle(InRoomHandle),
@@ -65,11 +50,41 @@ void FLudeoRoom::AddPlayer
 	LudeoRoomAddPlayerParams InternalAddPlayerParams = Ludeo::create<LudeoRoomAddPlayerParams>();
 	InternalAddPlayerParams.playerId = PlayerIDStringConverter.Get();
 
-	FLudeoRoomPendingAddPlayerData* PendingAddPlayerData = new FLudeoRoomPendingAddPlayerData;
-	PendingAddPlayerData->OnAddPlayerDelegate = OnAddPlayerDelegate;
-	PendingAddPlayerData->RoomHandle = RoomHandle;
+	ludeo_Room_AddPlayer
+	(
+		RoomHandle,
+		&InternalAddPlayerParams,
+		FLudeoCallbackManager::GetInstance().CreateCallback
+		(
+			[
+				RoomHandle = RoomHandle,
+				OnAddPlayerDelegate
+			]
+			(const LudeoRoomAddPlayerCallbackParams& AddPlayerCallbackParams)
+			{
+				if(FLudeoRoom* Room = FLudeoRoom::GetRoomByRoomHandle(RoomHandle))
+				{
+					const FLudeoResult Result(AddPlayerCallbackParams.resultCode);
 
-	ludeo_Room_AddPlayer(RoomHandle, &InternalAddPlayerParams, PendingAddPlayerData, &FLudeoRoom::StaticOnAddPlayer);
+					if (Result.IsSuccessful())
+					{
+						Room->PlayerCollection.Emplace(AddPlayerCallbackParams.gameplaySession);
+					}
+
+					OnAddPlayerDelegate.ExecuteIfBound
+					(
+						Result,
+						RoomHandle,
+						AddPlayerCallbackParams.gameplaySession
+					);
+				}
+			}
+		),
+		[](const LudeoRoomAddPlayerCallbackParams* pAddPlayerCallbackParams)
+		{
+			FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pAddPlayerCallbackParams);
+		}
+	);
 }
 
 void FLudeoRoom::RemovePlayer
@@ -91,95 +106,56 @@ void FLudeoRoom::RemovePlayer
 		LudeoRoomRemovePlayerParams InternalRemovePlayerParams = Ludeo::create<LudeoRoomRemovePlayerParams>();
 		InternalRemovePlayerParams.playerId = PlayerIDStringConverter.Get();
 
-		FPendingRemovePlayerData* PendingRemovePlayerData = new FPendingRemovePlayerData;
-		PendingRemovePlayerData->PlayerHandle = RemovePlayerParameters.PlayerHandle;
-		PendingRemovePlayerData->OnRemovePlayerDelegate = OnRemovePlayerDelegate;
-		PendingRemovePlayerData->RoomHandle = RoomHandle;
+		ludeo_Room_RemovePlayer
+		(
+			RoomHandle,
+			&InternalRemovePlayerParams,
+			FLudeoCallbackManager::GetInstance().CreateCallback
+			(
+				[
+					RoomHandle = RoomHandle,
+					PlayerHandle = RemovePlayerParameters.PlayerHandle,
+					OnRemovePlayerDelegate
+				]
+				(const LudeoRoomRemovePlayerCallbackParams& RemovePlayerCallbackParams)
+				{
+					if (FLudeoRoom* Room = FLudeoRoom::GetRoomByRoomHandle(RoomHandle))
+					{
+						const FLudeoResult Result(RemovePlayerCallbackParams.resultCode);
 
-		ludeo_Room_RemovePlayer(RoomHandle, &InternalRemovePlayerParams, PendingRemovePlayerData, &FLudeoRoom::StaticOnRemovePlayer);
+						if (Result.IsSuccessful())
+						{
+							const int32 PlayerIndex = Room->PlayerCollection.IndexOfByPredicate([&](const FLudeoPlayer& Player)
+							{
+								return (static_cast<FLudeoPlayerHandle>(Player) == PlayerHandle);
+							});
+
+							check(Room->PlayerCollection.IsValidIndex(PlayerIndex));
+
+							if(Room->PlayerCollection.IsValidIndex(PlayerIndex))
+							{
+								Room->PlayerCollection.RemoveAtSwap(PlayerIndex);
+							}
+						}
+
+						OnRemovePlayerDelegate.ExecuteIfBound
+						(
+							Result,
+							RoomHandle,
+							PlayerHandle
+						);
+					}
+				}
+			),
+			[](const LudeoRoomRemovePlayerCallbackParams* pRemovePlayerCallbackParams)
+			{
+				FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pRemovePlayerCallbackParams);
+			}
+		);
 	}
 	else
 	{
 		OnRemovePlayerDelegate.ExecuteIfBound(LudeoResult::NotFound, *this, RemovePlayerParameters.PlayerHandle);
-	}
-}
-
-void FLudeoRoom::OnAddPlayer(const LudeoRoomAddPlayerCallbackParams& AddPlayerCallbackParams)
-{
-	if (FLudeoRoomPendingAddPlayerData* PendingAddPlayerData = static_cast<FLudeoRoomPendingAddPlayerData*>(AddPlayerCallbackParams.clientData))
-	{
-		const FLudeoResult Result(AddPlayerCallbackParams.resultCode);
-
-		if (Result.IsSuccessful())
-		{
-			PlayerCollection.Emplace(AddPlayerCallbackParams.gameplaySession);
-		}
-
-		PendingAddPlayerData->OnAddPlayerDelegate.ExecuteIfBound
-		(
-			Result,
-			RoomHandle,
-			AddPlayerCallbackParams.gameplaySession
-		);
-	}
-}
-
-void FLudeoRoom::StaticOnAddPlayer(const LudeoRoomAddPlayerCallbackParams* pAddPlayerCallbackParams)
-{
-	check(pAddPlayerCallbackParams != nullptr);
-	check(pAddPlayerCallbackParams->clientData != nullptr);
-
-	if (FLudeoRoomPendingAddPlayerData* PendingAddPlayerData = static_cast<FLudeoRoomPendingAddPlayerData*>(pAddPlayerCallbackParams->clientData))
-	{
-		if (FLudeoRoom* LudeoRoom = FLudeoRoom::GetRoomByRoomHandle(PendingAddPlayerData->RoomHandle))
-		{
-			LudeoRoom->OnAddPlayer(*pAddPlayerCallbackParams);
-		}
-
-		delete PendingAddPlayerData;
-	}
-}
-
-void FLudeoRoom::OnRemovePlayer(const LudeoRoomRemovePlayerCallbackParams& RemovePlayerCallbackParams)
-{
-	if (FPendingRemovePlayerData* PendingRemovePlayerData = static_cast<FPendingRemovePlayerData*>(RemovePlayerCallbackParams.clientData))
-	{
-		const FLudeoResult Result(RemovePlayerCallbackParams.resultCode);
-
-		if (Result.IsSuccessful())
-		{
-			const int32 PlayerIndex = PlayerCollection.IndexOfByPredicate([&](const FLudeoPlayer& Player)
-			{
-				return (static_cast<FLudeoPlayerHandle>(Player) == PendingRemovePlayerData->PlayerHandle);
-			});
-
-			check(PlayerCollection.IsValidIndex(PlayerIndex));
-
-			PlayerCollection.RemoveAtSwap(PlayerIndex);
-		}
-
-		PendingRemovePlayerData->OnRemovePlayerDelegate.ExecuteIfBound
-		(
-			Result,
-			RoomHandle,
-			PendingRemovePlayerData->PlayerHandle
-		);
-	}
-}
-
-void FLudeoRoom::StaticOnRemovePlayer(const LudeoRoomRemovePlayerCallbackParams* pRemovePlayerCallbackParams)
-{
-	check(pRemovePlayerCallbackParams != nullptr);
-	check(pRemovePlayerCallbackParams->clientData != nullptr);
-
-	if (FPendingRemovePlayerData* PendingRemovePlayerData = static_cast<FPendingRemovePlayerData*>(pRemovePlayerCallbackParams->clientData))
-	{
-		if (FLudeoRoom* LudeoRoom = FLudeoRoom::GetRoomByRoomHandle(PendingRemovePlayerData->RoomHandle))
-		{
-			LudeoRoom->OnRemovePlayer(*pRemovePlayerCallbackParams);
-		}
-
-		delete PendingRemovePlayerData;
 	}
 }
 

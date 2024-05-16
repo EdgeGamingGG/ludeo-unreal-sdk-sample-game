@@ -35,13 +35,6 @@ public:
 	) const;
 
 private:
-	void OnBeginGameplay(const LudeoGameplaySessionBeginCallbackParams& BeginGameplayCallabckParams) const;
-	static void StaticOnBeginGameplay(const LudeoGameplaySessionBeginCallbackParams* pBeginGameplayCallabckParams);
-
-	void OnEndGameplay(const LudeoGameplaySessionEndCallbackParams& EndGameplayCallbackParams) const;
-	static void StaticOnEndGameplay(const LudeoGameplaySessionEndCallbackParams* pEndGameplayCallbackParams);
-
-private:
 	FLudeoPlayerHandle PlayerHandle;
 
 private:

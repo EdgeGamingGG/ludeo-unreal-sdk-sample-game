@@ -26,7 +26,7 @@ public:
 	(
 		const FDestroyLudeoSessionParameters& DestroyLudeoSessionParameters,
 		const FOnLudeoSessionDestroyedDelegate& OnLudeoSessionDestroyedDelegate = {}
-	) const;
+	);
 
 	FLudeoSession* GetSessionBySessionHandle(const FLudeoSessionHandle& SessionHandle) const;
 
@@ -35,10 +35,6 @@ private:
 	static FLudeoSession* StaticGetSessionByRoomHandle(const FLudeoRoomHandle& RoomHandle);
 	static FLudeoSession* StaticGetSessionByPlayerHandle(const FLudeoPlayerHandle& PlayerHandle);
 	static FLudeoSession* StaticGetSessionByLudeoHandle(const FLudeoHandle& LudeoHandle);
-
-private:
-	static void StaticOnSessionDestroyed(const LudeoSessionReleaseCallbackParams* pSessionReleaseCallbackParams);
-	void OnSessionDestroyed(const LudeoSessionReleaseCallbackParams& SessionReleaseCallbackParams);
 
 private:
 	TArray<FLudeoSession> SessionCollection;

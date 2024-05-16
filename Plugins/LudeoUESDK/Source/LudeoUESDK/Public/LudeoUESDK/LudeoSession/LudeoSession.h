@@ -93,9 +93,6 @@ private:
 	void SubscribeNotification();
 
 private:
-	static void StaticOnGetLudeo(const LudeoSessionGetLudeoCallbackParams* pGetLudeoCallbackParams);
-	void OnGetLudeo(const LudeoSessionGetLudeoCallbackParams& GetLudeoCallbackParams);
-
 	static void StaticOnLudeoSelected(const LudeoSessionLudeoSelectedCallbackParams* pLudeoSelectedCallbackParams);
 	void OnLudeoSelected(const LudeoSessionLudeoSelectedCallbackParams& LudeoSelectedCallbackParams) const;
 
@@ -110,18 +107,6 @@ private:
 
 	static void StaticOnRoomReady(const LudeoSessionRoomReadyCallbackParams* pRoomReadyCallbackParams);
 	void OnRoomReady(const LudeoSessionRoomReadyCallbackParams& RoomReadyCallbackParams) const;
-
-	void OnSessionActivated(const LudeoSessionActivateCallbackParams& SessionActivateCallbackParams) const;
-	static void StaticOnSessionActivated(const LudeoSessionActivateCallbackParams* pSessionActivateCallbackParams);
-
-	void OnRoomOpen(const LudeoSessionOpenRoomCallbackParams& OpenRoomCallbackParams);
-	static void StaticOnRoomOpen(const LudeoSessionOpenRoomCallbackParams* pOpenRoomCallbackParams);
-
-	void OnRoomClose(const LudeoRoomCloseCallbackParams& CloseRoomCallbackParams);
-	static void StaticOnRoomClose(const LudeoRoomCloseCallbackParams* pCloseRoomCallbackParams);
-
-	void OnMarkHighlight(const LudeoSessionMarkHighlightCallbackParams& MarkHighlightCallbackParams) const;
-	static void StaticOnMarkHighlight(const LudeoSessionMarkHighlightCallbackParams* pMarkHighlightCallbackParams);
 
 private:
 	FOnLudeoSessionDestroyedMulticastDelegate				OnDestroySessionDelegate;

@@ -2,23 +2,9 @@
 
 #include <Ludeo/Utils.h>
 
+#include "LudeoUESDK/LudeoCallback/LudeoCallbackManager.h"
 #include "LudeoUESDK/LudeoSession/LudeoSessionManager.h"
 #include "LudeoUESDK/LudeoRoom/LudeoRoom.h"
-
-struct FLudeoPlayerPendingData
-{
-	FLudeoPlayerHandle PlayerHandle;
-};
-
-struct FLudeoPlayerPendingBeginGameplayData : public FLudeoPlayerPendingData
-{
-	FLudeoPlayerOnBeginGameplayDelegate OnBeginGameplayDelegate;
-};
-
-struct FLudeoPlayerPendingEndGameplayData : public FLudeoPlayerPendingData
-{
-	FLudeoPlayerOnEndGameplayDelegate OnEndGameplayDelegate;
-};
 
 FLudeoPlayer::FLudeoPlayer(const FLudeoPlayerHandle& InPlayerHandle) :
 	PlayerHandle(InPlayerHandle)
@@ -75,11 +61,29 @@ void FLudeoPlayer::BeginGameplay
 {
 	LudeoGameplaySessionBeginParams BeginGameplayParams = Ludeo::create<LudeoGameplaySessionBeginParams>();
 
-	FLudeoPlayerPendingBeginGameplayData* PendingBeginGameplayData = new FLudeoPlayerPendingBeginGameplayData;
-	PendingBeginGameplayData->OnBeginGameplayDelegate = OnBeginGameplayDelegate;
-	PendingBeginGameplayData->PlayerHandle = PlayerHandle;
-
-	ludeo_GameplaySession_Begin(PlayerHandle, &BeginGameplayParams, PendingBeginGameplayData, &FLudeoPlayer::StaticOnBeginGameplay);
+	ludeo_GameplaySession_Begin
+	(
+		PlayerHandle,
+		&BeginGameplayParams,
+		FLudeoCallbackManager::GetInstance().CreateCallback
+		(
+			[
+				PlayerHandle = PlayerHandle,
+				OnBeginGameplayDelegate
+			]
+			(const LudeoGameplaySessionBeginCallbackParams& BeginGameplayCallabckParams)
+			{
+				if(const FLudeoPlayer* Player = FLudeoPlayer::GetPlayerByPlayerHandle(PlayerHandle))
+				{
+					OnBeginGameplayDelegate.ExecuteIfBound(BeginGameplayCallabckParams.resultCode, *Player);
+				}
+			}
+		),
+		[](const LudeoGameplaySessionBeginCallbackParams* pBeginGameplayCallabckParams)
+		{
+			FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pBeginGameplayCallabckParams);
+		}
+	);
 }
 
 void FLudeoPlayer::EndGameplay
@@ -91,57 +95,27 @@ void FLudeoPlayer::EndGameplay
 	LudeoGameplaySessionEndParams EndGameplayParams = Ludeo::create<LudeoGameplaySessionEndParams>();
 	EndGameplayParams.isAbort = (EndGameplayParameters.bIsAbort ? LUDEO_TRUE : LUDEO_FALSE);
 
-	FLudeoPlayerPendingEndGameplayData* PendingEndGameplayData = new FLudeoPlayerPendingEndGameplayData;
-	PendingEndGameplayData->OnEndGameplayDelegate = OnEndGameplayDelegate;
-	PendingEndGameplayData->PlayerHandle = PlayerHandle;
-
-	ludeo_GameplaySession_End(PlayerHandle, &EndGameplayParams, PendingEndGameplayData, &FLudeoPlayer::StaticOnEndGameplay);
-}
-
-void FLudeoPlayer::OnBeginGameplay(const LudeoGameplaySessionBeginCallbackParams& BeginGameplayCallabckParams) const
-{
-	if (FLudeoPlayerPendingBeginGameplayData* PendingBeginGameplayData = static_cast<FLudeoPlayerPendingBeginGameplayData*>(BeginGameplayCallabckParams.clientData))
-	{
-		PendingBeginGameplayData->OnBeginGameplayDelegate.ExecuteIfBound(BeginGameplayCallabckParams.resultCode, *this);
-	}
-}
-
-void FLudeoPlayer::StaticOnBeginGameplay(const LudeoGameplaySessionBeginCallbackParams* pBeginGameplayCallabckParams)
-{
-	check(pBeginGameplayCallabckParams != nullptr);
-	check(pBeginGameplayCallabckParams->clientData != nullptr);
-
-	if (FLudeoPlayerPendingBeginGameplayData* PendingBeginGameplayData = static_cast<FLudeoPlayerPendingBeginGameplayData*>(pBeginGameplayCallabckParams->clientData))
-	{
-		if (const FLudeoPlayer* Player = FLudeoPlayer::GetPlayerByPlayerHandle(PendingBeginGameplayData->PlayerHandle))
+	ludeo_GameplaySession_End
+	(
+		PlayerHandle,
+		&EndGameplayParams,
+		FLudeoCallbackManager::GetInstance().CreateCallback
+		(
+			[
+				PlayerHandle = PlayerHandle,
+				OnEndGameplayDelegate
+			]
+			(const LudeoGameplaySessionEndCallbackParams& EndGamepalyCallbackParams)
+			{
+				if (const FLudeoPlayer* Player = FLudeoPlayer::GetPlayerByPlayerHandle(PlayerHandle))
+				{
+					OnEndGameplayDelegate.ExecuteIfBound(EndGamepalyCallbackParams.resultCode, *Player);
+				}
+			}
+		),
+		[](const LudeoGameplaySessionEndCallbackParams* pEndGamepalyCallbackParams)
 		{
-			Player->OnBeginGameplay(*pBeginGameplayCallabckParams);
+			FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pEndGamepalyCallbackParams);
 		}
-
-		delete PendingBeginGameplayData;
-	}
-}
-
-void FLudeoPlayer::OnEndGameplay(const LudeoGameplaySessionEndCallbackParams& EndGamepalyCallbackParams) const
-{
-	if (FLudeoPlayerPendingEndGameplayData* PendingEndGameplayData = static_cast<FLudeoPlayerPendingEndGameplayData*>(EndGamepalyCallbackParams.clientData))
-	{
-		PendingEndGameplayData->OnEndGameplayDelegate.ExecuteIfBound(EndGamepalyCallbackParams.resultCode, PlayerHandle);
-	}
-}
-
-void FLudeoPlayer::StaticOnEndGameplay(const LudeoGameplaySessionEndCallbackParams* pEndGamepalyCallbackParams)
-{
-	check(pEndGamepalyCallbackParams != nullptr);
-	check(pEndGamepalyCallbackParams->clientData != nullptr);
-
-	if (FLudeoPlayerPendingEndGameplayData* PendingEndGameplayData = static_cast<FLudeoPlayerPendingEndGameplayData*>(pEndGamepalyCallbackParams->clientData))
-	{
-		if (const FLudeoPlayer* Player = FLudeoPlayer::GetPlayerByPlayerHandle(PendingEndGameplayData->PlayerHandle))
-		{
-			Player->OnEndGameplay(*pEndGamepalyCallbackParams);
-		}
-
-		delete PendingEndGameplayData;
-	}
+	);
 }

@@ -6,35 +6,9 @@
 #include <Ludeo/TemporaryAPI.h>
 #include <Ludeo/Utils.h>
 
+#include "LudeoUESDK/LudeoCallback/LudeoCallbackManager.h"
 #include "LudeoUESDK/LudeoSession/LudeoSessionManager.h"
 #include "LudeoUESDK/LudeoRoom/LudeoRoom.h"
-
-struct FLudeoSessionPendingData
-{
-	FLudeoSessionHandle SessionHandle;
-};
-
-struct FLudeoSessionPendingGetLudeoData : public FLudeoSessionPendingData
-{
-	FString LudeoID;
-	FLudeoSessionOnGetLudeoDelegate OnGetLudeoDelegate;
-};
-
-struct FLudeoSessionPendingActivateSessionData : public FLudeoSessionPendingData
-{
-	FLudeoSessionOnActivatedDelegate OnActivatedDelegate;
-};
-
-struct FLudeoSessionPendingOpenRoomData : public FLudeoSessionPendingData
-{
-	FLudeoSessionOnOpenRoomDelegate OnOpenRoomDelegate;
-};
-
-struct FLudeoSessionPendingCloseRoomData : public FLudeoSessionPendingData
-{
-	FLudeoRoomHandle RoomHandle;
-	FLudeoSessionOnCloseRoomDelegate OnCloseRoomDelegate;
-};
 
 FLudeoSession::FLudeoSession(const FLudeoSessionHandle& InSessionHandle) :
 	SessionHandle(InSessionHandle)
@@ -94,27 +68,68 @@ FLudeo* FLudeoSession::GetLudeoByLudeoHandle(const FLudeoHandle& LudeoHandle) co
 
 void FLudeoSession::GetLudeo(const FString& LudeoID, const FLudeoSessionOnGetLudeoDelegate& OnGetLudeoDelegate) const
 {
-	const FTCHARToUTF8 LudeoIDStringConverter
-	(
-		LudeoID.GetCharArray().GetData(),
-		LudeoID.GetCharArray().Num()
-	);
+	const int32 LudeoIndex = LudeoCollection.FindLastByPredicate([&](const FLudeo& Ludeo)
+	{
+		return (Ludeo.GetLudeoID() == LudeoID);
+	});
 
-	LudeoSessionGetLudeoParams GetLudeoParameters = Ludeo::create<LudeoSessionGetLudeoParams>();
-	GetLudeoParameters.ludeoId = LudeoIDStringConverter.Get();
+	if (LudeoCollection.IsValidIndex(LudeoIndex))
+	{
+		OnGetLudeoDelegate.ExecuteIfBound
+		(
+			FLudeoResult::Success(),
+			SessionHandle,
+			LudeoCollection[LudeoIndex]
+		);
+	}
+	else
+	{
+		const FTCHARToUTF8 LudeoIDStringConverter
+		(
+			LudeoID.GetCharArray().GetData(),
+			LudeoID.GetCharArray().Num()
+		);
 
-	FLudeoSessionPendingGetLudeoData* PendingGetLudeoData = new FLudeoSessionPendingGetLudeoData;
-	PendingGetLudeoData->LudeoID = LudeoID;
-	PendingGetLudeoData->OnGetLudeoDelegate = OnGetLudeoDelegate;
-	PendingGetLudeoData->SessionHandle = SessionHandle;
+		LudeoSessionGetLudeoParams GetLudeoParameters = Ludeo::create<LudeoSessionGetLudeoParams>();
+		GetLudeoParameters.ludeoId = LudeoIDStringConverter.Get();
 
-	ludeo_Session_GetLudeo
-	(
-		SessionHandle,
-		&GetLudeoParameters,
-		PendingGetLudeoData,
-		&FLudeoSession::StaticOnGetLudeo
-	);
+		ludeo_Session_GetLudeo
+		(
+			SessionHandle,
+			&GetLudeoParameters,
+			FLudeoCallbackManager::GetInstance().CreateCallback
+			(
+				[
+					SessionHandle = SessionHandle,
+					LudeoID,
+					OnGetLudeoDelegate
+				]
+				(const LudeoSessionGetLudeoCallbackParams& GetLudeoCallbackParams)
+				{
+					if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
+					{
+						const FLudeoResult Result(GetLudeoCallbackParams.resultCode);
+
+						if (Result.IsSuccessful())
+						{
+							LudeoSession->LudeoCollection.Emplace(GetLudeoCallbackParams.dataReader);
+						}
+
+						OnGetLudeoDelegate.ExecuteIfBound
+						(
+							Result,
+							SessionHandle,
+							GetLudeoCallbackParams.dataReader
+						);
+					}
+				}
+			),
+			[](const LudeoSessionGetLudeoCallbackParams* pGetLudeoCallbackParams)
+			{
+				FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pGetLudeoCallbackParams);
+			}
+		);
+	}
 }
 
 void FLudeoSession::Activate
@@ -125,10 +140,6 @@ void FLudeoSession::Activate
 {
 	SubscribeNotification();
 	check(NotificationIDCollection.Num() == NotificationIDCollection.Max());
-
-	FLudeoSessionPendingActivateSessionData* PendingActivateSessionData = new FLudeoSessionPendingActivateSessionData;
-	PendingActivateSessionData->OnActivatedDelegate = OnActivatedDelegate;
-	PendingActivateSessionData->SessionHandle = SessionHandle;
 
 	const FTCHARToUTF8 APIKeyStringConverter
 	(
@@ -166,6 +177,8 @@ void FLudeoSession::Activate
 	InternalSessionActivateParams.windowHandle = ActivateSessionParameters.GameWindowHandle;
 	InternalSessionActivateParams.reset = static_cast<LudeoBool>(ActivateSessionParameters.bResetAttributeAndAction);
 
+	LudeoSteamAuthDetails SteamAuthDetails;
+
 	if(
 		ActivateSessionParameters.AuthenticationType == ELudeoSessionAuthenticationType::Steam &&
 		!ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID.IsEmpty() &&
@@ -190,20 +203,43 @@ void FLudeoSession::Activate
 			ActivateSessionParameters.SteamAuthenticationDetails.BetaBranchName.GetCharArray().Num()
 		);
 
-		LudeoSteamAuthDetails SteamAuthDetails;
+		
 		SteamAuthDetails.authType = LudeoAuthType::Steam;
 		SteamAuthDetails.authId = SteamAuthenticationIDStringConverter.Get();
 		SteamAuthDetails.displayName = SteamDisplayNameStringConverter.Get();
 		SteamAuthDetails.currentBetaName = SteamBetaBranchStringConverter.Get();
 
 		InternalSessionActivateParams.authDetails = &SteamAuthDetails;
-
-		ludeo_Session_Activate(SessionHandle, &InternalSessionActivateParams, PendingActivateSessionData, &FLudeoSession::StaticOnSessionActivated);
 	}
-	else
-	{
-		ludeo_Session_Activate(SessionHandle, &InternalSessionActivateParams, PendingActivateSessionData, &FLudeoSession::StaticOnSessionActivated);
-	}
+	
+	ludeo_Session_Activate
+	(
+		SessionHandle,
+		&InternalSessionActivateParams,
+		FLudeoCallbackManager::GetInstance().CreateCallback
+		(
+			[
+				SessionHandle = SessionHandle,
+				OnActivatedDelegate
+			]
+			(const LudeoSessionActivateCallbackParams& SessionActivateCallbackParams)
+			{
+				if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
+				{
+					OnActivatedDelegate.ExecuteIfBound
+					(
+						SessionActivateCallbackParams.resultCode,
+						SessionHandle,
+						(SessionActivateCallbackParams.ludeoSelected == LUDEO_TRUE)
+					);
+				}
+			}
+		),
+		[](const LudeoSessionActivateCallbackParams* pSessionActivateCallbackParams)
+		{
+			FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pSessionActivateCallbackParams);
+		}
+	);
 }
 
 void FLudeoSession::OpenRoom
@@ -228,11 +264,41 @@ void FLudeoSession::OpenRoom
 	IntenralOpenRoomParams.roomId = RoomIDStringConverter.Get();
 	IntenralOpenRoomParams.ludeoId = LudeoIDStringConverter.Get();
 
-	FLudeoSessionPendingOpenRoomData* PendingOpenRoomData = new FLudeoSessionPendingOpenRoomData;
-	PendingOpenRoomData->OnOpenRoomDelegate = OnOpenRoomDelegate;
-	PendingOpenRoomData->SessionHandle = SessionHandle;
+	ludeo_Session_OpenRoom
+	(
+		SessionHandle,
+		&IntenralOpenRoomParams,
+		FLudeoCallbackManager::GetInstance().CreateCallback
+		(
+			[
+				SessionHandle = SessionHandle,
+				OnOpenRoomDelegate
+			]
+			(const LudeoSessionOpenRoomCallbackParams& OpenRoomCallbackParams)
+			{
+				if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
+				{
+					const FLudeoResult Result(OpenRoomCallbackParams.resultCode);
 
-	ludeo_Session_OpenRoom(SessionHandle, &IntenralOpenRoomParams, PendingOpenRoomData, &FLudeoSession::StaticOnRoomOpen);
+					if (Result.IsSuccessful())
+					{
+						LudeoSession->RoomCollection.Emplace(OpenRoomCallbackParams.room, OpenRoomCallbackParams.dataWriter);
+					}
+
+					OnOpenRoomDelegate.ExecuteIfBound
+					(
+						Result,
+						SessionHandle,
+						OpenRoomCallbackParams.room
+					);
+				}
+			}
+		),
+		[](const LudeoSessionOpenRoomCallbackParams* pOpenRoomCallbackParams)
+		{
+			FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pOpenRoomCallbackParams);
+		}
+	);
 }
 
 void FLudeoSession::CloseRoom
@@ -243,12 +309,50 @@ void FLudeoSession::CloseRoom
 {
 	LudeoRoomCloseParams IntenralCloseRoomParams = Ludeo::create<LudeoRoomCloseParams>();
 
-	FLudeoSessionPendingCloseRoomData* PendingCloseRoomData = new FLudeoSessionPendingCloseRoomData;
-	PendingCloseRoomData->RoomHandle = CloseRoomParameters.RoomHandle;
-	PendingCloseRoomData->OnCloseRoomDelegate = OnCloseRoomDelegate;
-	PendingCloseRoomData->SessionHandle = SessionHandle;
+	ludeo_Room_Close
+	(
+		CloseRoomParameters.RoomHandle,
+		&IntenralCloseRoomParams,
+		FLudeoCallbackManager::GetInstance().CreateCallback
+		(
+			[
+				SessionHandle = SessionHandle,
+				RoomHandle = CloseRoomParameters.RoomHandle,
+				OnCloseRoomDelegate
+			]
+			(const LudeoRoomCloseCallbackParams& CloseRoomCallbackParams)
+			{
+				if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
+				{
+					if (FLudeoResult(CloseRoomCallbackParams.resultCode).IsSuccessful())
+					{
+						const int32 RoomIndex = LudeoSession->RoomCollection.IndexOfByPredicate([&](const FLudeoRoom& Room)
+						{
+							return (static_cast<FLudeoRoomHandle>(Room) == RoomHandle);
+						});
 
-	ludeo_Room_Close(CloseRoomParameters.RoomHandle, &IntenralCloseRoomParams, PendingCloseRoomData, &FLudeoSession::StaticOnRoomClose);
+						check(LudeoSession->RoomCollection.IsValidIndex(RoomIndex));
+
+						if(LudeoSession->RoomCollection.IsValidIndex(RoomIndex))
+						{
+							LudeoSession->RoomCollection.RemoveAtSwap(RoomIndex);
+						}
+					}
+
+					OnCloseRoomDelegate.ExecuteIfBound
+					(
+						CloseRoomCallbackParams.resultCode,
+						SessionHandle,
+						RoomHandle
+					);
+				}
+			}
+		),
+		[](const LudeoRoomCloseCallbackParams* pCloseRoomCallbackParams)
+		{
+			FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pCloseRoomCallbackParams);
+		}
+	);
 }
 
 FLudeoResult FLudeoSession::OpenGallery(const FLudeoSessionOpenGalleryParameters& OpenGalleryParameters) const
@@ -364,50 +468,6 @@ bool FLudeoSession::ReleaseLudeo(const FLudeoHandle& LudeoHandle)
 	return LudeoCollection.IsValidIndex(Index);
 }
 
-void FLudeoSession::StaticOnGetLudeo(const LudeoSessionGetLudeoCallbackParams* pGetLudeoCallbackParams)
-{
-	check(pGetLudeoCallbackParams != nullptr);
-	check(pGetLudeoCallbackParams->clientData != nullptr);
-
-	if (FLudeoSessionPendingGetLudeoData* PendingGetLudeoData = static_cast<FLudeoSessionPendingGetLudeoData*>(pGetLudeoCallbackParams->clientData))
-	{
-		if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(PendingGetLudeoData->SessionHandle))
-		{
-			LudeoSession->OnGetLudeo(*pGetLudeoCallbackParams);
-		}
-
-		delete PendingGetLudeoData;
-	}
-}
-
-void FLudeoSession::OnGetLudeo(const LudeoSessionGetLudeoCallbackParams& GetLudeoCallbackParams)
-{
-	if (FLudeoSessionPendingGetLudeoData* PendingGetLudeoData = static_cast<FLudeoSessionPendingGetLudeoData*>(GetLudeoCallbackParams.clientData))
-	{
-		const FLudeoResult Result(GetLudeoCallbackParams.resultCode);
-
-		if (Result.IsSuccessful())
-		{
-			const bool bHasExistingLudeo = LudeoCollection.ContainsByPredicate([&](const FLudeo& Ludeo)
-			{
-				return (static_cast<FLudeoHandle>(Ludeo) == GetLudeoCallbackParams.dataReader);
-			});
-
-			if(!bHasExistingLudeo)
-			{
-				LudeoCollection.Emplace(GetLudeoCallbackParams.dataReader);
-			}
-		}
-
-		PendingGetLudeoData->OnGetLudeoDelegate.ExecuteIfBound
-		(
-			Result,
-			SessionHandle,
-			GetLudeoCallbackParams.dataReader
-		);
-	}
-}
-
 void FLudeoSession::StaticOnLudeoSelected(const LudeoSessionLudeoSelectedCallbackParams* pLudeoSelectedCallbackParams)
 {
 	check(pLudeoSelectedCallbackParams != nullptr);
@@ -490,112 +550,6 @@ void FLudeoSession::StaticOnRoomReady(const LudeoSessionRoomReadyCallbackParams*
 void FLudeoSession::OnRoomReady(const LudeoSessionRoomReadyCallbackParams& RoomReadyCallbackParams) const
 {
 	OnRoomReadyDelegate.Broadcast(SessionHandle, RoomReadyCallbackParams.room);
-}
-
-void FLudeoSession::StaticOnSessionActivated(const LudeoSessionActivateCallbackParams* pSessionActivateCallbackParams)
-{
-	check(pSessionActivateCallbackParams != nullptr);
-	check(pSessionActivateCallbackParams->clientData != nullptr);
-
-	if (FLudeoSessionPendingActivateSessionData* PendingActivateSessionData = static_cast<FLudeoSessionPendingActivateSessionData*>(pSessionActivateCallbackParams->clientData))
-	{
-		if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(PendingActivateSessionData->SessionHandle))
-		{
-			LudeoSession->OnSessionActivated(*pSessionActivateCallbackParams);
-		}
-
-		delete PendingActivateSessionData;
-	}
-}
-
-void FLudeoSession::OnSessionActivated(const LudeoSessionActivateCallbackParams& SessionActivateCallbackParams) const
-{
-	if (FLudeoSessionPendingActivateSessionData* PendingActivateSessionData = static_cast<FLudeoSessionPendingActivateSessionData*>(SessionActivateCallbackParams.clientData))
-	{
-		PendingActivateSessionData->OnActivatedDelegate.ExecuteIfBound
-		(
-			SessionActivateCallbackParams.resultCode,
-			SessionHandle,
-			(SessionActivateCallbackParams.ludeoSelected == LUDEO_TRUE)
-		);
-	}
-}
-
-void FLudeoSession::OnRoomOpen(const LudeoSessionOpenRoomCallbackParams& OpenRoomCallbackParams)
-{
-	if (FLudeoSessionPendingOpenRoomData* PendingOpenRoomData = static_cast<FLudeoSessionPendingOpenRoomData*>(OpenRoomCallbackParams.clientData))
-	{
-		const FLudeoResult Result(OpenRoomCallbackParams.resultCode);
-
-		if (Result.IsSuccessful())
-		{
-			RoomCollection.Emplace(OpenRoomCallbackParams.room, OpenRoomCallbackParams.dataWriter);
-		}
-
-		PendingOpenRoomData->OnOpenRoomDelegate.ExecuteIfBound
-		(
-			Result,
-			SessionHandle,
-			OpenRoomCallbackParams.room
-		);
-	}
-}
-
-void FLudeoSession::StaticOnRoomOpen(const LudeoSessionOpenRoomCallbackParams* pOpenRoomCallbackParams)
-{
-	check(pOpenRoomCallbackParams != nullptr);
-	check(pOpenRoomCallbackParams->clientData != nullptr);
-
-	if (FLudeoSessionPendingOpenRoomData* PendingOpenRoomData = static_cast<FLudeoSessionPendingOpenRoomData*>(pOpenRoomCallbackParams->clientData))
-	{
-		if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(PendingOpenRoomData->SessionHandle))
-		{
-			LudeoSession->OnRoomOpen(*pOpenRoomCallbackParams);
-		}
-
-		delete PendingOpenRoomData;
-	}
-}
-
-void FLudeoSession::OnRoomClose(const LudeoRoomCloseCallbackParams& CloseRoomCallbackParams)
-{
-	if (FLudeoSessionPendingCloseRoomData* PendingCloseRoomData = static_cast<FLudeoSessionPendingCloseRoomData*>(CloseRoomCallbackParams.clientData))
-	{
-		if (FLudeoResult(CloseRoomCallbackParams.resultCode).IsSuccessful())
-		{
-			const int32 RoomIndex = RoomCollection.IndexOfByPredicate([&](const FLudeoRoom& Room)
-			{
-				return (static_cast<FLudeoRoomHandle>(Room) == PendingCloseRoomData->RoomHandle);
-			});
-
-			check(RoomCollection.IsValidIndex(RoomIndex));
-			
-			RoomCollection.RemoveAtSwap(RoomIndex);
-		}
-
-		PendingCloseRoomData->OnCloseRoomDelegate.ExecuteIfBound
-		(
-			CloseRoomCallbackParams.resultCode,
-			SessionHandle,
-			PendingCloseRoomData->RoomHandle
-		);
-	}
-}
-
-void FLudeoSession::StaticOnRoomClose(const LudeoRoomCloseCallbackParams* pCloseRoomCallbackParams)
-{
-	check(pCloseRoomCallbackParams != nullptr);
-	check(pCloseRoomCallbackParams->clientData != nullptr);
-
-	if (FLudeoSessionPendingCloseRoomData* PendingCloseRoomData = static_cast<FLudeoSessionPendingCloseRoomData*>(pCloseRoomCallbackParams->clientData))
-	{
-		if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(PendingCloseRoomData->SessionHandle))
-		{
-			LudeoSession->OnRoomClose(*pCloseRoomCallbackParams);
-		}
-
-		delete PendingCloseRoomData;
-	}
 }
 
 FLudeoRoom* FLudeoSession::GetRoomByRoomHandle(const FLudeoRoomHandle& RoomHandle) const

@@ -192,8 +192,6 @@ void ALudeoGameState::OnLudeoSessionActivated(const FLudeoResult& Result, const 
 		if (const FLudeo* Ludeo = FLudeo::GetLudeoByLudeoHandle(GameInstance->GetPendingLudeoHandle()))
 		{
 			OnLudeoSelected(*Ludeo);
-
-			GameInstance->ReleasePendingLudeo();
 		}
 		else
 		{
