@@ -68,68 +68,59 @@ FLudeo* FLudeoSession::GetLudeoByLudeoHandle(const FLudeoHandle& LudeoHandle) co
 
 void FLudeoSession::GetLudeo(const FString& LudeoID, const FLudeoSessionOnGetLudeoDelegate& OnGetLudeoDelegate) const
 {
-	const int32 LudeoIndex = LudeoCollection.FindLastByPredicate([&](const FLudeo& Ludeo)
-	{
-		return (Ludeo.GetLudeoID() == LudeoID);
-	});
+	const FTCHARToUTF8 LudeoIDStringConverter
+	(
+		LudeoID.GetCharArray().GetData(),
+		LudeoID.GetCharArray().Num()
+	);
 
-	if (LudeoCollection.IsValidIndex(LudeoIndex))
-	{
-		OnGetLudeoDelegate.ExecuteIfBound
-		(
-			FLudeoResult::Success(),
-			SessionHandle,
-			LudeoCollection[LudeoIndex]
-		);
-	}
-	else
-	{
-		const FTCHARToUTF8 LudeoIDStringConverter
-		(
-			LudeoID.GetCharArray().GetData(),
-			LudeoID.GetCharArray().Num()
-		);
+	LudeoSessionGetLudeoParams GetLudeoParameters = Ludeo::create<LudeoSessionGetLudeoParams>();
+	GetLudeoParameters.ludeoId = LudeoIDStringConverter.Get();
 
-		LudeoSessionGetLudeoParams GetLudeoParameters = Ludeo::create<LudeoSessionGetLudeoParams>();
-		GetLudeoParameters.ludeoId = LudeoIDStringConverter.Get();
-
-		ludeo_Session_GetLudeo
+	ludeo_Session_GetLudeo
+	(
+		SessionHandle,
+		&GetLudeoParameters,
+		FLudeoCallbackManager::GetInstance().CreateCallback
 		(
-			SessionHandle,
-			&GetLudeoParameters,
-			FLudeoCallbackManager::GetInstance().CreateCallback
-			(
-				[
-					SessionHandle = SessionHandle,
-					LudeoID,
-					OnGetLudeoDelegate
-				]
-				(const LudeoSessionGetLudeoCallbackParams& GetLudeoCallbackParams)
+			[
+				SessionHandle = SessionHandle,
+				LudeoID,
+				OnGetLudeoDelegate
+			]
+			(const LudeoSessionGetLudeoCallbackParams& GetLudeoCallbackParams)
+			{
+				if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
 				{
-					if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
-					{
-						const FLudeoResult Result(GetLudeoCallbackParams.resultCode);
+					const FLudeoResult Result(GetLudeoCallbackParams.resultCode);
 
-						if (Result.IsSuccessful())
+					if (Result.IsSuccessful())
+					{
+						const bool bHasExistingLudeo = LudeoSession->LudeoCollection.ContainsByPredicate([&](const FLudeo& Ludeo)
+						{
+							return (static_cast<FLudeoHandle>(Ludeo) == GetLudeoCallbackParams.dataReader);
+						});
+
+						if (!bHasExistingLudeo)
 						{
 							LudeoSession->LudeoCollection.Emplace(GetLudeoCallbackParams.dataReader);
 						}
-
-						OnGetLudeoDelegate.ExecuteIfBound
-						(
-							Result,
-							SessionHandle,
-							GetLudeoCallbackParams.dataReader
-						);
 					}
+
+					OnGetLudeoDelegate.ExecuteIfBound
+					(
+						Result,
+						SessionHandle,
+						GetLudeoCallbackParams.dataReader
+					);
 				}
-			),
-			[](const LudeoSessionGetLudeoCallbackParams* pGetLudeoCallbackParams)
-			{
-				FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pGetLudeoCallbackParams);
 			}
-		);
-	}
+		),
+		[](const LudeoSessionGetLudeoCallbackParams* pGetLudeoCallbackParams)
+		{
+			FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pGetLudeoCallbackParams);
+		}
+	);
 }
 
 void FLudeoSession::Activate

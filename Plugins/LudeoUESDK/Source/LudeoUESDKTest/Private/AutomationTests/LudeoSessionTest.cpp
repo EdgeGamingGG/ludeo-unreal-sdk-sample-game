@@ -264,8 +264,8 @@ bool FLudeoSessionActivateTest::RunTest(const FString& Parameters)
 		);
 
 		FLudeoSessionActivateSessionParameters ActivateSessionParameters;
-		ActivateSessionParameters.ApiKey			= TEXT("3f421ddb-ddf9-4c48-b2b5-037399e15d26");
-		ActivateSessionParameters.AppToken			= FString();
+		ActivateSessionParameters.ApiKey				= TEXT("My API Key");
+		ActivateSessionParameters.AppToken				= FString();
 		ActivateSessionParameters.GameWindowHandle	= nullptr;
 
 		bool bHasReceivedResult = false;

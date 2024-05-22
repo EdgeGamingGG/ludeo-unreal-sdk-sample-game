@@ -42,7 +42,7 @@ public:
 	bool WriteData
 	(
 		const WritableObjectMapType& ObjectMap,
-		const FLudeoPropertyFilter& PropertyFilter = FLudeoPropertyFilter()
+		const FLudeoObjectPropertyFilter& PropertyFilter = FLudeoObjectPropertyFilter()
 	) const;
 
 	bool WriteData(const TCHAR* AttributeName, const int8& Data) const;
@@ -82,7 +82,7 @@ public:
 		const UStruct* StructureType,
 		const void* Structure,
 		const WritableObjectMapType& ObjectMap,
-		const FLudeoPropertyFilter& PropertyFilter = FLudeoPropertyFilter()
+		const FLudeoObjectPropertyFilter& PropertyFilter = FLudeoObjectPropertyFilter()
 	) const;
 
 	bool WriteData
@@ -99,7 +99,7 @@ private:
 		const UStruct* StructureType,
 		const void* StructureContainer,
 		const WritableObjectMapType& ObjectMap,
-		const FLudeoPropertyFilter& PropertyFilter
+		const FLudeoObjectPropertyFilter& PropertyFilter
 	) const;
 
 private:

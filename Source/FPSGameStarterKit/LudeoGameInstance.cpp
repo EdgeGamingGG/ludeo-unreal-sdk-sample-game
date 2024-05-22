@@ -61,6 +61,11 @@ bool ULudeoGameInstance::OpenLudeoGallery(const FLudeoSessionHandle& LudeoSessio
 	return false;
 }
 
+bool ULudeoGameInstance::ExecuteLudeoCommand(const FString& Key, const FString& Value)
+{
+	return FLudeoManager::ExecuteLudeoCommand(*Key, *Value);
+}
+
 FLudeoSessionHandle ULudeoGameInstance::GetActiveLudeoSessionHandle(const UObject* WorldContextObject)
 {
 	check(WorldContextObject != nullptr);

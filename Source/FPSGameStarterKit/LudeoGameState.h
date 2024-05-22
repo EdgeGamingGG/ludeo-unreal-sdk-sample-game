@@ -64,21 +64,18 @@ public:
 
 	void LoadLudeo(const FLudeo& Ludeo);
 
-	UFUNCTION(BlueprintCallable)
-	bool ReportPlayerAction(const APlayerState* PlayerState, const ELudeoPlayerAction PlayerAction) const;
-
-	FORCEINLINE bool IsLudeoGame() const
-	{
-		return !ReplicatedLudeoRoomInformation.RoomInformation.LudeoID.IsEmpty();
-	}
-
 	bool IsSessionReady() const;
-	
-private:
-	UFUNCTION()
-	void OnRep_LudeoRoomInformation();
 
-	void TickSaveObjectState();
+public:
+	UFUNCTION
+	(
+		BlueprintCallable,
+		meta =
+		(
+			DisplayName = "Ludeo Report Player Action"
+		)
+	)
+	static bool ReportPlayerAction(const APlayerState* PlayerState, const ELudeoPlayerAction PlayerAction);
 
 	UFUNCTION
 	(
@@ -93,18 +90,23 @@ private:
 
 	UFUNCTION
 	(
-		BlueprintCallable,
+		BlueprintPure,
 		meta =
 		(
-			Category = "Ludeo",
-			DisplayName = "Ludeo Report Local Player Action",
 			DefaultToSelf = "WorldContextObject",
 			HidePin = "WorldContextObject"
 		)
 	)
-	static bool ReportLocalPlayerAction(const UObject* WorldContextObject, const ELudeoPlayerAction PlayerAction);
+	static const APlayerState* GetLocalPlayerState(const UObject* WorldContextObject);
 
-	const APlayerState* GetLocalPlayerState() const;
+	UFUNCTION(BlueprintPure)
+	static const APlayerState* GetObjectAssociatedPlayerState(const UObject* Object);
+
+private:
+	UFUNCTION()
+	void OnRep_LudeoRoomInformation();
+
+	void TickSaveObjectState();
 
 	void OnSessionReady(const bool bIsSuccessful);
 

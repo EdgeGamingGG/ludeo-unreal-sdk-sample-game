@@ -141,7 +141,7 @@ bool FLudeoWritableObject::UnbindPlayer() const
 bool FLudeoWritableObject::WriteData
 (
 	const WritableObjectMapType& ObjectMap,
-	const FLudeoPropertyFilter& PropertyFilter
+	const FLudeoObjectPropertyFilter& PropertyFilter
 ) const
 {
 	if(const UObject* Data = WeakObject.Get())
@@ -313,7 +313,7 @@ bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const UObject* 
 {
 	const FLudeoObjectHandle LudeoObjectHandle = [&]()
 	{
-		if (Data != nullptr)
+		if (Data != nullptr && !Data->IsPendingKillOrUnreachable())
 		{
 			if (const FLudeoWritableObject* LudeoObject = ObjectMap.Find(Data))
 			{
@@ -584,7 +584,7 @@ bool FLudeoWritableObject::WriteData
 	const UStruct* StructureType,
 	const void* Structure,
 	const WritableObjectMapType& ObjectMap,
-	const FLudeoPropertyFilter& PropertyFilter
+	const FLudeoObjectPropertyFilter& PropertyFilter
 ) const
 {
 	const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject, false> EnterComponentGuard(*this, AttributeName);
@@ -602,7 +602,7 @@ bool FLudeoWritableObject::InternalWriteData
 	const UStruct* StructureType,
 	const void* StructureContainer,
 	const WritableObjectMapType& ObjectMap,
-	const FLudeoPropertyFilter& PropertyFilter
+	const FLudeoObjectPropertyFilter& PropertyFilter
 ) const
 {
 	check(StructureType != nullptr);

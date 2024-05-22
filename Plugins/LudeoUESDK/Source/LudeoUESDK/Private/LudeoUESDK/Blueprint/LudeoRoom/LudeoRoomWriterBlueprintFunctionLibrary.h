@@ -19,7 +19,7 @@ public:
 		const FLudeoRoomWriterSetSendSettingsParameters& SetSendSettingsParameters
 	);
 
-	UFUNCTION(BlueprintCallable, meta = (Category = "Ludeo Object", DisplayName = "Ludeo Data Writer Send Action"))
+	UFUNCTION(BlueprintCallable, meta = (Category = "Ludeo Object", DisplayName = "Ludeo Room Writer Send Action"))
 	static bool LudeoRoomWriterSendAction
 	(
 		const FLudeoRoomHandle& RoomHandle,

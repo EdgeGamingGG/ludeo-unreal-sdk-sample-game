@@ -32,7 +32,7 @@ ALudeoGameState::ALudeoGameState() :
 	{
 		FLudeoSaveGameActorData& SaveGameActorData = SaveGameSpecification.SaveGameActorDataCollection.AddDefaulted_GetRef();
 		SaveGameActorData.ActorFilter.MatchingActorClass = APlayerController::StaticClass();
-		SaveGameActorData.AdditionalSaveGamePropertyNameCollection.Add(TEXT("PlayerState"));
+		SaveGameActorData.ActorFilter.ActorPropertyFilter.MatchingPropertyNameFilter.PropertyNameCollection.Add(TEXT("PlayerState"));
 		SaveGameActorData.Strategy = ELudeoSaveGameStrategy::Reconcile;
 	}
 
@@ -40,7 +40,7 @@ ALudeoGameState::ALudeoGameState() :
 	{
 		FLudeoSaveGameActorData& SaveGameActorData = SaveGameSpecification.SaveGameActorDataCollection.AddDefaulted_GetRef();
 		SaveGameActorData.ActorFilter.MatchingActorClass = APlayerState::StaticClass();
-		SaveGameActorData.AdditionalSaveGamePropertyNameCollection.Add(TEXT("PlayerId"));
+		SaveGameActorData.ActorFilter.ActorPropertyFilter.MatchingPropertyNameFilter.PropertyNameCollection.Add(TEXT("PlayerId"));
 		SaveGameActorData.Strategy = ELudeoSaveGameStrategy::Reconcile;
 	}
 }
@@ -85,39 +85,28 @@ bool ALudeoGameState::IsLudeoGame(const UObject* WorldContextObject)
 	UWorld* World = WorldContextObject->GetWorld();
 	check(World != nullptr);
 
-	if (const ALudeoGameState* GameState = World->GetGameState<ALudeoGameState>())
-	{
-		return GameState->IsLudeoGame();
-	}
+	const ALudeoGameState* GameState = World->GetGameState<ALudeoGameState>();
+	check(GameState != nullptr);
 
-	return false;
+	return !GameState->ReplicatedLudeoRoomInformation.RoomInformation.LudeoID.IsEmpty();
 }
 
-bool ALudeoGameState::ReportLocalPlayerAction(const UObject* WorldContextObject, const ELudeoPlayerAction PlayerAction)
-{
-	check(WorldContextObject != nullptr);
-
-	UWorld* World = WorldContextObject->GetWorld();
-	check(World != nullptr);
-
-	if (const ALudeoGameState* GameState = World->GetGameState<ALudeoGameState>())
-	{
-		return GameState->ReportPlayerAction(GameState->GetLocalPlayerState(), PlayerAction);
-	}
-
-	return false;
-}
-
-bool ALudeoGameState::ReportPlayerAction(const APlayerState* PlayerState, const ELudeoPlayerAction PlayerAction) const
+bool ALudeoGameState::ReportPlayerAction(const APlayerState* PlayerState, const ELudeoPlayerAction PlayerAction)
 {
 	check(PlayerState != nullptr);
+	
+	UWorld* World = PlayerState->GetWorld();
+	check(World != nullptr);
+
+	const ALudeoGameState* GameState = World->GetGameState<ALudeoGameState>();
+	check(GameState != nullptr);
 
 	static UEnum* Enum = FindObject<UEnum>(ANY_PACKAGE, TNameOf<ELudeoPlayerAction>::GetName());
 	check(Enum != nullptr);
 
 	FLudeoResult Result;
 
-	if (const FLudeoRoom* LudeoRoom = FLudeoRoom::GetRoomByRoomHandle(LudeoRoomHandle))
+	if (const FLudeoRoom* LudeoRoom = FLudeoRoom::GetRoomByRoomHandle(GameState->LudeoRoomHandle))
 	{
 		FLudeoRoomWriterSendActionParameters SendActionParameters;
 		SendActionParameters.ActionName = Enum->GetNameStringByValue(static_cast<int64>(PlayerAction));
@@ -127,7 +116,7 @@ bool ALudeoGameState::ReportPlayerAction(const APlayerState* PlayerState, const 
 
 		UKismetSystemLibrary::PrintString
 		(
-			this,
+			World,
 			*FString::Printf
 			(
 				TEXT("Player action %s is reported. Result: %s"),
@@ -254,7 +243,7 @@ void ALudeoGameState::OnLudeoRoomOpened(const FLudeoResult& Result, const FLudeo
 			ReplicatedLudeoRoomInformation.bIsRoomResultReady = true;
 		}
 
-		const APlayerState* PlayerState = GetLocalPlayerState();
+		const APlayerState* PlayerState = ALudeoGameState::GetLocalPlayerState(this);
 		check(PlayerState != nullptr);
 
 		AddPlayer(*PlayerState, *LudeoRoom);
@@ -305,7 +294,7 @@ void ALudeoGameState::ConditionalOpenRoom()
 		{
 			const bool bHasReplicatedPlayerState = [&]()
 			{
-				if (const APlayerState* LocalPlayerState = GetLocalPlayerState())
+				if (const APlayerState* LocalPlayerState = ALudeoGameState::GetLocalPlayerState(this))
 				{
 					return (LocalPlayerState->GetPlayerId() != LocalPlayerState->GetClass()->GetDefaultObject<APlayerState>()->GetPlayerId());
 				}
@@ -358,23 +347,36 @@ void ALudeoGameState::OnRep_LudeoRoomInformation()
 	}
 }
 
-const APlayerState* ALudeoGameState::GetLocalPlayerState() const
+const APlayerState* ALudeoGameState::GetLocalPlayerState(const UObject* WorldContextObject)
 {
-	for (const APlayerState* PlayerState : PlayerArray)
+	check(WorldContextObject != nullptr);
+
+	UWorld* World = WorldContextObject->GetWorld();
+	check(World != nullptr);
+
+	if (const ALudeoGameState* GameState = World->GetGameState<ALudeoGameState>())
 	{
-		if (PlayerState != nullptr)
+		for (const APlayerState* PlayerState : GameState->PlayerArray)
 		{
-			if (APlayerController* PlayerController = Cast<APlayerController>(PlayerState->GetOwner()))
+			if (PlayerState != nullptr)
 			{
-				if (PlayerController->IsLocalController())
+				if (APlayerController* PlayerController = Cast<APlayerController>(PlayerState->GetOwner()))
 				{
-					return PlayerController->PlayerState;
+					if (PlayerController->IsLocalController())
+					{
+						return PlayerController->PlayerState;
+					}
 				}
 			}
 		}
 	}
 
 	return nullptr;
+}
+
+const APlayerState* ALudeoGameState::GetObjectAssociatedPlayerState(const UObject* Object)
+{
+	return FLudeoObjectStateManager::GetObjectAssociatedPlayerState(Object);
 }
 
 void ALudeoGameState::OpenRoom(const FString& RoomID, const FString& LudeoID)
@@ -543,8 +545,9 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 			{
 				const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
 
+				// Read PlayerId with either string due to the nature of FName being case-insensitive
 				int32 PlayerID;
-				const bool bHasRead = ReadableObject.ReadData(TEXT("PlayerId"), PlayerID);
+				const bool bHasRead = (ReadableObject.ReadData(TEXT("PlayerId"), PlayerID) || ReadableObject.ReadData(TEXT("PlayerID"), PlayerID));
 				check(bHasRead);
 
 				if (FString::FromInt(PlayerID) == Ludeo.GetCreatorPlayerID())
@@ -629,6 +632,22 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 			RestoreWorldObjectMap
 		);
 		check(bHasWorldRestored);
+
+		for (FLudeoReadableObject::ReadableObjectMapType::TConstIterator Itr = RestoreWorldObjectMap.CreateConstIterator(); Itr; ++Itr)
+		{
+			if (USceneComponent* SceneComponent = Cast<USceneComponent>(Itr->Get<1>()))
+			{
+				if (UPrimitiveComponent* PrimitiveComponent = Cast<UPrimitiveComponent>(SceneComponent))
+				{
+					if (PrimitiveComponent->IsSimulatingPhysics())
+					{
+						PrimitiveComponent->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+					}
+				}
+
+				SceneComponent->UpdateComponentToWorld(EUpdateTransformFlags::None, ETeleportType::TeleportPhysics);
+			}
+		}
 	}
 
 	// Step five: Possess player character and turn other player into a bot

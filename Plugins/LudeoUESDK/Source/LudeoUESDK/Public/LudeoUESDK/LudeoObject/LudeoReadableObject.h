@@ -8,7 +8,7 @@
 class LUDEOUESDK_API FLudeoReadableObject : public FLudeoObject
 {
 public:
-	typedef TMap<FLudeoReadableObject, const UObject*> ReadableObjectMapType;
+	typedef TMap<FLudeoReadableObject, UObject*> ReadableObjectMapType;
 
 public:
 	FLudeoReadableObject(const FLudeoObjectHandle InObjectHandle, const FLudeoHandle& InLudeoHandle);
@@ -33,7 +33,7 @@ public:
 	(
 		const UObject* Data,
 		const ReadableObjectMapType& ObjectMap,
-		const FLudeoPropertyFilter& PropertyFilter = FLudeoPropertyFilter()
+		const FLudeoObjectPropertyFilter& PropertyFilter = FLudeoObjectPropertyFilter()
 	) const;
 
 	bool ReadData(const TCHAR* AttributeName, int8& Data) const;
@@ -70,7 +70,7 @@ public:
 		const UStruct* StructureType,
 		void* Structure,
 		const ReadableObjectMapType& ObjectMap,
-		const FLudeoPropertyFilter& PropertyFilter = FLudeoPropertyFilter()
+		const FLudeoObjectPropertyFilter& PropertyFilter = FLudeoObjectPropertyFilter()
 	) const;
 
 	bool ReadData
@@ -87,7 +87,7 @@ private:
 		const UStruct* StructureType,
 		void* StructureContainer,
 		const ReadableObjectMapType& ObjectMap,
-		const FLudeoPropertyFilter& PropertyFilter
+		const FLudeoObjectPropertyFilter& PropertyFilter
 	) const;
 
 private:

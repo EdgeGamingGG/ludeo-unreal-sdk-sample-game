@@ -32,6 +32,9 @@ public:
 	)
 	static bool OpenLudeoGallery(const FLudeoSessionHandle& LudeoSessionHandle);
 
+	UFUNCTION(exec, BlueprintCallable)
+	static bool ExecuteLudeoCommand(const FString& Key, const FString& Value);
+
 	UFUNCTION
 	(
 		BlueprintPure,

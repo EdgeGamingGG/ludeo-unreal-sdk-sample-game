@@ -1,0 +1,3 @@
+#include "LudeoUESDK/LudeoObject/LudeoObjectStateTypes.h"
+
+const FLudeoSaveGameSubObjectData FLudeoSaveGameSpecification::DefaultSubObjectSaveGameData;

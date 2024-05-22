@@ -341,7 +341,7 @@ bool FLudeoReadableObject::ReadData
 	const UStruct* StructureType,
 	void* Structure,
 	const ReadableObjectMapType& ObjectMap,
-	const FLudeoPropertyFilter& PropertyFilter
+	const FLudeoObjectPropertyFilter& PropertyFilter
 ) const
 {
 	const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject, true> EnterComponentGuard
@@ -631,7 +631,7 @@ bool FLudeoReadableObject::ReadData
 (
 	const UObject* Data,
 	const ReadableObjectMapType& ObjectMap,
-	const FLudeoPropertyFilter& PropertyFilter
+	const FLudeoObjectPropertyFilter& PropertyFilter
 ) const
 {
 	check(Data != nullptr);
@@ -644,7 +644,7 @@ bool FLudeoReadableObject::InternalReadData
 	const UStruct* StructureType,
 	void* StructureContainer,
 	const ReadableObjectMapType& ObjectMap,
-	const FLudeoPropertyFilter& PropertyFilter
+	const FLudeoObjectPropertyFilter& PropertyFilter
 ) const
 {
 	bool bIsAllDataReadSuccessfully = true;

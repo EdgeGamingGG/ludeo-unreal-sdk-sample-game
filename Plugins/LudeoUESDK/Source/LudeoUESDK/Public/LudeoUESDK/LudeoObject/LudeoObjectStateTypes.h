@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CoreMinimal.h"
+#include "LudeoObjectTypes.h"
 
 #include "LudeoObjectStateTypes.generated.h"
 
@@ -24,9 +24,12 @@ struct FLudeoSaveGameActorFilter
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TSubclassOf<AActor>> SkipActorClassCollection;
 
+	UPROPERTY(EditDefaultsOnly)
+	FLudeoObjectPropertyFilter ActorPropertyFilter;
+
 	bool Match(const TSubclassOf<AActor>& ActorClass) const
 	{
-		check(ActorClass != nullptr);
+		check(MatchingActorClass != nullptr);
 
 		if (ActorClass->IsChildOf(MatchingActorClass))
 		{
@@ -41,51 +44,40 @@ struct FLudeoSaveGameActorFilter
 };
 
 USTRUCT()
-struct FLudeoSaveGameActorCompomnentFilter
+struct FLudeoSaveGameSubObjectFilter
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UActorComponent> MatchingActorComponentClass;
+	TSubclassOf<UObject> MatchingObjectClass = UObject::StaticClass();
 
 	UPROPERTY(EditDefaultsOnly)
-	TArray<TSubclassOf<UActorComponent>> SkipActorComponentClassCollection;
+	FLudeoObjectPropertyFilter ObjectPropertyFilter;
 
-	bool Match(const TSubclassOf<UActorComponent>& ActorComponentClass) const
+	bool Match(const TSubclassOf<UObject>& ObjectClass) const
 	{
-		check(ActorComponentClass != nullptr);
+		check(MatchingObjectClass != nullptr);
 
-		if(ActorComponentClass->IsChildOf(MatchingActorComponentClass))
-		{
-			return !SkipActorComponentClassCollection.ContainsByPredicate([&](const TSubclassOf<UActorComponent>& SkipActorComponentClass)
-			{
-				return ActorComponentClass->IsChildOf(SkipActorComponentClass);
-			});
-		}
-
-		return false;
+		return ObjectClass->IsChildOf(MatchingObjectClass);
 	}
 };
 
 USTRUCT()
-struct FLudeoSaveGameActorCompomnentData
+struct FLudeoSaveGameSubObjectData
 {
 	GENERATED_BODY()
 
-	FLudeoSaveGameActorCompomnentData() :
-		Strategy(ELudeoSaveGameStrategy::Reconcile)
+	FLudeoSaveGameSubObjectData() :
+		Strategy(ELudeoSaveGameStrategy::Purge)
 	{
 
 	}
 
 	UPROPERTY(EditDefaultsOnly)
-	FLudeoSaveGameActorCompomnentFilter ActorCompomnentFilter;
+	FLudeoSaveGameSubObjectFilter SubObjectFilter;
 
 	UPROPERTY(EditDefaultsOnly)
 	ELudeoSaveGameStrategy Strategy;
-
-	UPROPERTY(EditDefaultsOnly)
-	TArray<FName> AdditionalSaveGamePropertyNameCollection;
 };
 
 USTRUCT()
@@ -106,10 +98,7 @@ struct FLudeoSaveGameActorData
 	ELudeoSaveGameStrategy Strategy;
 
 	UPROPERTY(EditDefaultsOnly)
-	TArray<FName> AdditionalSaveGamePropertyNameCollection;
-
-	UPROPERTY(EditDefaultsOnly)
-	TArray<FLudeoSaveGameActorCompomnentData> SaveGameActorComponentDataCollection;
+	TArray<FLudeoSaveGameSubObjectData> SaveGameSubObjectDataCollection;
 };
 
 USTRUCT()
@@ -119,4 +108,6 @@ struct FLudeoSaveGameSpecification
 
 	UPROPERTY(EditDefaultsOnly)
 	TArray<FLudeoSaveGameActorData> SaveGameActorDataCollection;
+
+	static const FLudeoSaveGameSubObjectData DefaultSubObjectSaveGameData;
 };
