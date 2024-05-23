@@ -4,7 +4,7 @@
 
 #include "LudeoUESDK/LudeoManager/LudeoManagerTypes.h"
 #include "LudeoUESDK/LudeoSession/LudeoSessionManager.h"
-#include "LudeoUESDK/LudeoLog/LudeoLog.h"
+#include "LudeoUESDK/LudeoLog/LudeoLogTypes.h"
 
 /* Ludeo manager, an entry point of the plugin */
 class LUDEOUESDK_API FLudeoManager

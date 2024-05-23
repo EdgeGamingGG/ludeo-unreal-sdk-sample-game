@@ -3,6 +3,7 @@
 #include <Ludeo/DataReader.h>
 
 #include "LudeoUESDK/LudeoScopedGuard.h"
+#include "LudeoUESDK/LudeoLog/LudeoLogTypes.h"
 #include "LudeoUESDK/LudeoResult.h"
 
 // Suppress unreal wrong deprecated warning
@@ -75,7 +76,7 @@ bool GenericReadData(const FLudeoHandle& LudeoHandle, const char* AttributeName,
 			bHasReadData = GenericReadData(LudeoHandle, AttributeName, BufferData);
 			check(bHasReadData);
 
-			Data = FString(Buffer.Num(), BufferData);
+			Data = UTF8_TO_TCHAR(BufferData);
 		}
 
 		return bHasReadData;
@@ -297,19 +298,31 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FText& Data) con
 	return bHasReadData;
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, UClass*& Data) const
+bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, UClass*& Data, FString* ClassPathName) const
 {
-	FString ClassPathName;
+	FString StringData;
 
-	if (GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), ClassPathName))
+	if (GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), StringData))
 	{
-		if (ClassPathName.Len() > 0)
+		if (StringData.Len() > 0)
 		{
-			Data = LoadClass<UObject>(nullptr, *ClassPathName);
+			if (UClass* LoadedClass = LoadClass<UObject>(nullptr, *StringData))
+			{
+				Data = LoadedClass;
+			}
+			else
+			{
+				UE_LOG(LogLudeo, Warning, TEXT(R"(Attribute "%s" was read succesfully but class cannot be loaded with the associated string data)"), *StringData);
+			}
 		}
 		else
 		{
 			Data = nullptr;
+		}
+
+		if (ClassPathName != nullptr)
+		{
+			*ClassPathName = MoveTemp(StringData);
 		}
 
 		return true;
@@ -509,11 +522,11 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* Prop
 	{
 		UClass* ObjectClass = nullptr;
 
-		if (ensure(ReadData(AttributeName, ObjectClass)))
+		bIsDataReadSuccessfully = ReadData(AttributeName, ObjectClass);
+
+		if (bIsDataReadSuccessfully)
 		{
 			ClassProperty->SetObjectPropertyValue_InContainer(const_cast<void*>(PropertyContainer), ObjectClass);
-
-			bIsDataReadSuccessfully = true;
 		}
 	}
 	else if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))

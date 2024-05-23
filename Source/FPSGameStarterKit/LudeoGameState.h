@@ -157,8 +157,8 @@ private:
 private:
 	FDelegateHandle ActorSpawnedDelegateHandle;
 
-	FLudeoWritableObject::WritableObjectMapType ObjectMap;
 	TOptional<TArray<AActor*>> SaveGameActorCollection;
+	FLudeoWritableObject::WritableObjectMapType ObjectMap;
 
 private:
 	FLudeoSessionHandle LudeoSessionHandle;

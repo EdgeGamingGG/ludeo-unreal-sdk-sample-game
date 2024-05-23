@@ -59,7 +59,7 @@ public:
 	bool ReadData(const TCHAR* AttributeName, FString& Data) const;
 	bool ReadData(const TCHAR* AttributeName, FName& Data) const;
 	bool ReadData(const TCHAR* AttributeName, FText& Data) const;
-	bool ReadData(const TCHAR* AttributeName, UClass*& Data) const;
+	bool ReadData(const TCHAR* AttributeName, UClass*& Data, FString* ClassPathName = nullptr) const;
 	bool ReadData(const TCHAR* AttributeName, FLudeoObjectHandle& Data) const;
 	bool ReadData(const TCHAR* AttributeName, UObject*& Data, const ReadableObjectMapType& ObjectMap) const;
 	bool ReadData(const TCHAR* AttributeName, FWeakObjectPtr& Data, const ReadableObjectMapType& ObjectMap) const;
