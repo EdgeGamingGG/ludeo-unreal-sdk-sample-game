@@ -87,12 +87,28 @@ void ALudeoGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		if(HasAuthority())
 		{
 			CloseRoom();
-		}
-	}
 
-	if (HasAuthority())
-	{
-		FGameModeEvents::GameModeLogoutEvent.RemoveAll(this);
+			FGameModeEvents::GameModeLogoutEvent.RemoveAll(this);
+
+			if (ActorSpawnedDelegateHandle.IsValid())
+			{
+				if (UWorld* World = GetWorld())
+				{
+					World->RemoveOnActorSpawnedHandler(ActorSpawnedDelegateHandle);
+				}
+			}
+
+			if (SaveGameActorCollection.IsSet())
+			{
+				for (AActor* Actor : SaveGameActorCollection.GetValue())
+				{
+					if (Actor != nullptr)
+					{
+						Actor->OnDestroyed.RemoveAll(this);
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -386,6 +402,36 @@ void ALudeoGameState::OnRep_LudeoRoomInformation()
 	}
 }
 
+void ALudeoGameState::OnActorSpawned(AActor* ActorSpawned, const bool bShouldCheckSaveGameActor)
+{
+	check(SaveGameActorCollection.IsSet());
+
+	check(ActorSpawned != nullptr);
+
+	if (ActorSpawned != nullptr)
+	{
+		if (!bShouldCheckSaveGameActor || SaveGameSpecification.IsSaveGameActor(ActorSpawned))
+		{
+			ActorSpawned->OnDestroyed.AddDynamic(this, &ALudeoGameState::OnActorDestroyed);
+
+			if(SaveGameActorCollection.IsSet())
+			{
+				SaveGameActorCollection.GetValue().Add(ActorSpawned);
+			}
+		}
+	}
+}
+
+void ALudeoGameState::OnActorDestroyed(AActor* DestroyedActor)
+{
+	check(SaveGameActorCollection.IsSet());
+
+	if (SaveGameActorCollection.IsSet())
+	{
+		SaveGameActorCollection.GetValue().RemoveSingleSwap(DestroyedActor);
+	}
+}
+
 const APlayerState* ALudeoGameState::GetLocalPlayerState(const UObject* WorldContextObject)
 {
 	check(WorldContextObject != nullptr);
@@ -538,7 +584,30 @@ void ALudeoGameState::TickSaveObjectState()
 {
 	if (const FLudeoRoom* Room = FLudeoRoom::GetRoomByRoomHandle(LudeoRoomHandle))
 	{
-		FLudeoObjectStateManager::SaveWorld(this, *Room, SaveGameSpecification, ObjectMap);
+		FLudeoObjectStateManager::SaveWorld(this, *Room, SaveGameSpecification, SaveGameActorCollection, ObjectMap);
+
+		if (!SaveGameActorCollection.IsSet())
+		{
+			SaveGameActorCollection.Emplace();
+
+			UWorld* World = GetWorld();
+			check(World != nullptr);
+
+			for (
+				FLudeoWritableObject::WritableObjectMapType::TConstIterator Itr = ObjectMap.CreateConstIterator();
+				Itr;
+				++Itr
+			)
+			{
+				if (AActor* Actor = Cast<AActor>(const_cast<UObject*>(Itr->Get<0>())))
+				{
+					OnActorSpawned(Actor, false);
+				}
+			}
+
+			ActorSpawnedDelegateHandle = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateUObject(this, &ALudeoGameState::OnActorSpawned, true));
+			check(ActorSpawnedDelegateHandle.IsValid());
+		}
 	}
 }
 
@@ -609,6 +678,9 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 				}
 			}
 		}
+
+		// It should not be the fallback case
+		check(false);
 
 		return FallbackPlayerStateObjectHandle;
 	}();

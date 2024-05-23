@@ -107,6 +107,11 @@ private:
 	UFUNCTION()
 	void OnRep_LudeoRoomInformation();
 
+	void OnActorSpawned(AActor* ActorSpawned, const bool bShouldCheckSaveGameActor);
+
+	UFUNCTION()
+	void OnActorDestroyed(AActor* DestroyedActor);
+
 	void OnPlayerLeft(class AGameModeBase*, class AController* Controller);
 
 	void TickSaveObjectState();
@@ -150,7 +155,10 @@ private:
 	} LudeoGameSessionInitializationState;
 
 private:
+	FDelegateHandle ActorSpawnedDelegateHandle;
+
 	FLudeoWritableObject::WritableObjectMapType ObjectMap;
+	TOptional<TArray<AActor*>> SaveGameActorCollection;
 
 private:
 	FLudeoSessionHandle LudeoSessionHandle;

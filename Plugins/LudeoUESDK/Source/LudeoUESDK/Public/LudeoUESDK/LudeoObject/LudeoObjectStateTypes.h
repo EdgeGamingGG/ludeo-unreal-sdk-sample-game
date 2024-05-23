@@ -102,7 +102,7 @@ struct FLudeoSaveGameActorData
 };
 
 USTRUCT()
-struct FLudeoSaveGameSpecification
+struct LUDEOUESDK_API FLudeoSaveGameSpecification
 {
 	GENERATED_BODY()
 
@@ -110,4 +110,21 @@ struct FLudeoSaveGameSpecification
 	TArray<FLudeoSaveGameActorData> SaveGameActorDataCollection;
 
 	static const FLudeoSaveGameSubObjectData DefaultSubObjectSaveGameData;
+
+public:
+	const FLudeoSaveGameActorData* GetSaveGameActorData(const TSubclassOf<AActor>& ActorClass) const;
+
+	const FLudeoSaveGameSubObjectData* GetSaveGameSubObjectData
+	(
+		const TSubclassOf<AActor>& OuterActorClass,
+		const TSubclassOf<UObject>& ObjectClass
+	) const;
+
+	const FLudeoSaveGameSubObjectData* GetSaveGameSubObjectData
+	(
+		const TSubclassOf<UObject>& ObjectClass,
+		const TArray<FLudeoSaveGameSubObjectData>& SaveGameSubObjectDataCollection
+	) const;
+
+	bool IsSaveGameActor(const AActor* Actor) const;
 };
