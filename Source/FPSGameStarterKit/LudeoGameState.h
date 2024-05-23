@@ -56,6 +56,7 @@ class ALudeoGameState : public AGameState
 public:
 	ALudeoGameState();
 
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -106,6 +107,8 @@ private:
 	UFUNCTION()
 	void OnRep_LudeoRoomInformation();
 
+	void OnPlayerLeft(class AGameModeBase*, class AController* Controller);
+
 	void TickSaveObjectState();
 
 	void OnSessionReady(const bool bIsSuccessful);
@@ -127,6 +130,7 @@ private:
 	void OpenRoom(const FString& RoomID, const FString& LudeoID);
 	void CloseRoom();
 	void AddPlayer(const APlayerState& PlayerState, FLudeoRoom& LudeoRoom);
+	void RemovePlayer(const APlayerState& PlayerState, FLudeoRoom& LudeoRoom);
 	void BeginGamePlay();
 	void EndGamePlay();
 

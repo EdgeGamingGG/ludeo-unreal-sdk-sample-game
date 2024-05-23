@@ -533,9 +533,9 @@ bool FLudeoRoomRemovePlayerTest::RunTest(const FString& Parameters)
 				AddPlayerParameters,
 				FLudeoRoomOnAddPlayerDelegate::CreateLambda
 				(
-					[&](const FLudeoResult&, const FLudeoRoomHandle&, const FLudeoPlayerHandle& PlayerHandle)
+					[&](const FLudeoResult&, const FLudeoRoomHandle&, const FLudeoPlayerHandle&)
 					{
-						RemovePlayerParameters.PlayerHandle = PlayerHandle;
+						RemovePlayerParameters.PlayerID = AddPlayerParameters.PlayerID;
 					}
 				)
 			);
@@ -547,12 +547,12 @@ bool FLudeoRoomRemovePlayerTest::RunTest(const FString& Parameters)
 				RemovePlayerParameters,
 				FLudeoRoomOnRemovePlayerDelegate::CreateLambda
 				(
-					[&](const FLudeoResult& Result, const FLudeoRoomHandle& RoomHandle, const FLudeoPlayerHandle& PlayerHandle)
+					[&](const FLudeoResult& Result, const FLudeoRoomHandle& RoomHandle, const FString& PlayerID)
 					{
 						TEST_LUDEO_RESULT(TEXT("Remove Player"), Result, LudeoResult::Success);
 
 						TestEqual(TEXT("Room Handle"), RoomHandle, FLudeoRoomHandle(reinterpret_cast<LudeoHRoom>(0xDadBeefull)));
-						TestEqual(TEXT("Player Handle"), PlayerHandle, RemovePlayerParameters.PlayerHandle);
+						TestEqual(TEXT("Player Handle"), PlayerID, RemovePlayerParameters.PlayerID);
 
 						bHasReceivedResult = true;
 					}

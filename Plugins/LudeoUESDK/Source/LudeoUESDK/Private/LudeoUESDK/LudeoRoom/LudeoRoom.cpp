@@ -93,70 +93,59 @@ void FLudeoRoom::RemovePlayer
 	const FLudeoRoomOnRemovePlayerDelegate& OnRemovePlayerDelegate
 ) const
 {
-	if (const FLudeoPlayer* Player = GetPlayerByPlayerHandle(RemovePlayerParameters.PlayerHandle))
-	{
-		const FString& PlayerID = Player->GetPlayerID();
+	const FTCHARToUTF8 PlayerIDStringConverter
+	(
+		RemovePlayerParameters.PlayerID.GetCharArray().GetData(),
+		RemovePlayerParameters.PlayerID.GetCharArray().Num()
+	);
 
-		const FTCHARToUTF8 PlayerIDStringConverter
+	LudeoRoomRemovePlayerParams InternalRemovePlayerParams = Ludeo::create<LudeoRoomRemovePlayerParams>();
+	InternalRemovePlayerParams.playerId = PlayerIDStringConverter.Get();
+
+	ludeo_Room_RemovePlayer
+	(
+		RoomHandle,
+		&InternalRemovePlayerParams,
+		FLudeoCallbackManager::GetInstance().CreateCallback
 		(
-			PlayerID.GetCharArray().GetData(),
-			PlayerID.GetCharArray().Num()
-		);
-
-		LudeoRoomRemovePlayerParams InternalRemovePlayerParams = Ludeo::create<LudeoRoomRemovePlayerParams>();
-		InternalRemovePlayerParams.playerId = PlayerIDStringConverter.Get();
-
-		ludeo_Room_RemovePlayer
-		(
-			RoomHandle,
-			&InternalRemovePlayerParams,
-			FLudeoCallbackManager::GetInstance().CreateCallback
-			(
-				[
-					RoomHandle = RoomHandle,
-					PlayerHandle = RemovePlayerParameters.PlayerHandle,
-					OnRemovePlayerDelegate
-				]
-				(const LudeoRoomRemovePlayerCallbackParams& RemovePlayerCallbackParams)
-				{
-					if (FLudeoRoom* Room = FLudeoRoom::GetRoomByRoomHandle(RoomHandle))
-					{
-						const FLudeoResult Result(RemovePlayerCallbackParams.resultCode);
-
-						if (Result.IsSuccessful())
-						{
-							const int32 PlayerIndex = Room->PlayerCollection.IndexOfByPredicate([&](const FLudeoPlayer& Player)
-							{
-								return (static_cast<FLudeoPlayerHandle>(Player) == PlayerHandle);
-							});
-
-							check(Room->PlayerCollection.IsValidIndex(PlayerIndex));
-
-							if(Room->PlayerCollection.IsValidIndex(PlayerIndex))
-							{
-								Room->PlayerCollection.RemoveAtSwap(PlayerIndex);
-							}
-						}
-
-						OnRemovePlayerDelegate.ExecuteIfBound
-						(
-							Result,
-							RoomHandle,
-							PlayerHandle
-						);
-					}
-				}
-			),
-			[](const LudeoRoomRemovePlayerCallbackParams* pRemovePlayerCallbackParams)
+			[
+				RoomHandle = RoomHandle,
+				PlayerID = RemovePlayerParameters.PlayerID,
+				OnRemovePlayerDelegate
+			]
+			(const LudeoRoomRemovePlayerCallbackParams& RemovePlayerCallbackParams)
 			{
-				FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pRemovePlayerCallbackParams);
+				if (FLudeoRoom* Room = FLudeoRoom::GetRoomByRoomHandle(RoomHandle))
+				{
+					const FLudeoResult Result(RemovePlayerCallbackParams.resultCode);
+
+					if (Result.IsSuccessful())
+					{
+						const int32 PlayerIndex = Room->PlayerCollection.IndexOfByPredicate([&](const FLudeoPlayer& Player)
+						{
+							return (Player.GetPlayerID() == PlayerID);
+						});
+
+						if(Room->PlayerCollection.IsValidIndex(PlayerIndex))
+						{
+							Room->PlayerCollection.RemoveAtSwap(PlayerIndex);
+						}
+					}
+
+					OnRemovePlayerDelegate.ExecuteIfBound
+					(
+						Result,
+						RoomHandle,
+						PlayerID
+					);
+				}
 			}
-		);
-	}
-	else
-	{
-		OnRemovePlayerDelegate.ExecuteIfBound(LudeoResult::NotFound, *this, RemovePlayerParameters.PlayerHandle);
-	}
+		),
+		[](const LudeoRoomRemovePlayerCallbackParams* pRemovePlayerCallbackParams)
+		{
+			FLudeoCallbackManager::GetInstance().InvokeAndRemoveCallback(pRemovePlayerCallbackParams);
+		}
+	);
 }
 
 const FLudeoPlayer* FLudeoRoom::GetPlayerByPlayerHandle(const FLudeoPlayerHandle& PlayerHandle) const

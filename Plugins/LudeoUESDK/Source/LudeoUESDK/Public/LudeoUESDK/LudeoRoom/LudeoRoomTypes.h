@@ -29,10 +29,18 @@ private:
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
 (
-	FLudeoRoomPlayerOperationResultDynamicMulticastDelegate,
+	FLudeoRoomOnAddPlayerDynamicMulticastDelegate,
 	const FLudeoResult&, Result,
 	const FLudeoRoomHandle&, RoomHandle,
 	const FLudeoPlayerHandle&, PlayerHandle
+);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
+(
+	FLudeoRoomOnRemovePlayerDynamicMulticastDelegate,
+	const FLudeoResult&, Result,
+	const FLudeoRoomHandle&, RoomHandle,
+	const FString&, PlayerID
 );
 
 DECLARE_DELEGATE_ThreeParams
@@ -48,7 +56,7 @@ DECLARE_DELEGATE_ThreeParams
 	FLudeoRoomOnRemovePlayerDelegate,
 	const FLudeoResult&,
 	const FLudeoRoomHandle&,
-	const FLudeoPlayerHandle&
+	const FString&
 );
 
 USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Room Add Player Parameters"))
@@ -66,7 +74,7 @@ struct FLudeoRoomRemovePlayerParameters
 	GENERATED_BODY()
 
 	UPROPERTY(Transient, BlueprintReadWrite)
-	FLudeoPlayerHandle PlayerHandle;
+	FString PlayerID;
 };
 
 USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Room Get Room Information Parameters"))

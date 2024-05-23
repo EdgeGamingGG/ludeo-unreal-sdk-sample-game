@@ -940,8 +940,8 @@ bool FLudeoSessionGetRoomByPlayerHandleTest::RunTest(const FString& Parameters)
 			Room = Session->GetRoomByPlayerHandle(PlayerHandle);
 			TestNotNull(TEXT("Room"), Room);
 			
-			FLudeoRoomRemovePlayerParameters RemovePlayerParameters{};
-			RemovePlayerParameters.PlayerHandle = PlayerHandle;
+			FLudeoRoomRemovePlayerParameters RemovePlayerParameters;
+			RemovePlayerParameters.PlayerID = AddPlayerParameters.PlayerID;
 
 			Room->RemovePlayer(RemovePlayerParameters);
 

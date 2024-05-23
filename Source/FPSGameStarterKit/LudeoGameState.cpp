@@ -45,6 +45,16 @@ ALudeoGameState::ALudeoGameState() :
 	}
 }
 
+void ALudeoGameState::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if(HasAuthority())
+	{
+		FGameModeEvents::GameModeLogoutEvent.AddUObject(this, &ALudeoGameState::OnPlayerLeft);
+	}
+}
+
 void ALudeoGameState::BeginPlay()
 {
 	Super::BeginPlay();
@@ -74,7 +84,34 @@ void ALudeoGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	{
 		EndGamePlay();
 
-		CloseRoom();
+		if(HasAuthority())
+		{
+			CloseRoom();
+		}
+	}
+
+	if (HasAuthority())
+	{
+		FGameModeEvents::GameModeLogoutEvent.RemoveAll(this);
+	}
+}
+
+void ALudeoGameState::OnPlayerLeft(class AGameModeBase*, class AController* Controller)
+{
+	check(HasAuthority());
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (!PlayerController->IsLocalController())
+		{
+			if (FLudeoRoom* LudeoRoom = FLudeoRoom::GetRoomByRoomHandle(LudeoRoomHandle))
+			{
+				if(const APlayerState* PlayerState = PlayerController->GetPlayerState<APlayerState>())
+				{
+					RemovePlayer(*PlayerState, *LudeoRoom);
+				}
+			}
+		}
 	}
 }
 
@@ -119,9 +156,11 @@ bool ALudeoGameState::ReportPlayerAction(const APlayerState* PlayerState, const 
 			World,
 			*FString::Printf
 			(
-				TEXT("Player action %s is reported. Result: %s"),
+				TEXT("[Player - %s (ID: %d)] Player action %s is reported. Result: %s"),
+				*PlayerState->GetPlayerName(),
+				PlayerState->GetPlayerId(),
 				*SendActionParameters.ActionName,
-				(Result.IsSuccessful() ? TEXT("successful") : TEXT("unsuccessful"))
+				ANSI_TO_TCHAR(Result.ToString().GetData())
 			),
 			true,
 			true,
@@ -433,6 +472,14 @@ void ALudeoGameState::AddPlayer(const APlayerState& PlayerState, FLudeoRoom& Lud
 	);
 }
 
+void ALudeoGameState::RemovePlayer(const APlayerState& PlayerState, FLudeoRoom& LudeoRoom)
+{
+	FLudeoRoomRemovePlayerParameters RemovePlayerParameters;
+	RemovePlayerParameters.PlayerID = FString::FromInt(PlayerState.GetPlayerId());
+
+	LudeoRoom.RemovePlayer(RemovePlayerParameters);
+}
+
 void ALudeoGameState::BeginGamePlay()
 {
 	if(LudeoPlayerHandle != nullptr)
@@ -534,8 +581,10 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 	check(ObjectInformationCollection.Num() == ObjectClassCollection.Num())
 
 	// Step two: Find out the creator player state object handle
-	const FLudeoObjectHandle CreatorPlayerStateObjectHandle = [&]()
+	const FLudeoObjectHandle TargetPlayerStateObjectHandle = [&]()
 	{
+		FLudeoObjectHandle FallbackPlayerStateObjectHandle;
+
 		for (int32 i = 0; i < ObjectInformationCollection.Num(); ++i)
 		{
 			const FLudeoReadableObject& ReadableObject = ObjectInformationCollection[i].ReadableObject;
@@ -550,16 +599,20 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 				const bool bHasRead = (ReadableObject.ReadData(TEXT("PlayerId"), PlayerID) || ReadableObject.ReadData(TEXT("PlayerID"), PlayerID));
 				check(bHasRead);
 
-				if (FString::FromInt(PlayerID) == Ludeo.GetCreatorPlayerID())
+				if (Ludeo.GetCreatorPlayerID() == FString::FromInt(PlayerID))
 				{
 					return static_cast<FLudeoObjectHandle>(ReadableObject);
+				}
+				else
+				{
+					FallbackPlayerStateObjectHandle = static_cast<FLudeoObjectHandle>(ReadableObject);
 				}
 			}
 		}
 
-		return FLudeoObjectHandle();
+		return FallbackPlayerStateObjectHandle;
 	}();
-	check(CreatorPlayerStateObjectHandle.IsValid());
+	check(TargetPlayerStateObjectHandle.IsValid());
 
 	// Step three: Spawn non-creator player controller and build the initial object map
 	FLudeoReadableObject::ReadableObjectMapType RestoreWorldObjectMap;
@@ -599,7 +652,7 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 		
 					APlayerController* PlayerController = [&]()
 					{
-						if (PlayerStateObjectHandle == CreatorPlayerStateObjectHandle)
+						if (PlayerStateObjectHandle == TargetPlayerStateObjectHandle)
 						{
 							return CreatorPlayerController;
 						}

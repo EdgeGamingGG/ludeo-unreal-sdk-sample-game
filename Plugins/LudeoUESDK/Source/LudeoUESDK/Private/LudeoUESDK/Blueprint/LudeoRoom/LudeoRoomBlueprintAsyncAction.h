@@ -13,10 +13,10 @@ class ULudeoRoomAddPlayerAsyncNode : public UBlueprintAsyncActionBase
 
 public:
 	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "On Success"))
-	FLudeoRoomPlayerOperationResultDynamicMulticastDelegate OnSuccessDelegate;
+	FLudeoRoomOnAddPlayerDynamicMulticastDelegate OnSuccessDelegate;
 
 	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "On Fail"))
-	FLudeoRoomPlayerOperationResultDynamicMulticastDelegate OnFailDelegate;
+	FLudeoRoomOnAddPlayerDynamicMulticastDelegate OnFailDelegate;
 
 	UFUNCTION
 	(
@@ -56,10 +56,10 @@ class ULudeoRoomRemovePlayerAsyncNode : public UBlueprintAsyncActionBase
 
 public:
 	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "On Success"))
-	FLudeoRoomPlayerOperationResultDynamicMulticastDelegate OnSuccessDelegate;
+	FLudeoRoomOnRemovePlayerDynamicMulticastDelegate OnSuccessDelegate;
 
 	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "On Fail"))
-	FLudeoRoomPlayerOperationResultDynamicMulticastDelegate OnFailDelegate;
+	FLudeoRoomOnRemovePlayerDynamicMulticastDelegate OnFailDelegate;
 
 	UFUNCTION
 	(
@@ -83,12 +83,11 @@ public:
 	virtual void Activate() override;
 
 private:
-	void OnRemovePlayer(const FLudeoResult& Result, const FLudeoRoomHandle& InRoomHandle, const FLudeoPlayerHandle& InPlayerHandle);
+	void OnRemovePlayer(const FLudeoResult& Result, const FLudeoRoomHandle& InRoomHandle, const FString& PlayerID);
 
-	void OnResultReady(const FLudeoResult& Result, const FLudeoRoomHandle& InRoomHandle, const FLudeoPlayerHandle& InPlayerHandle);
+	void OnResultReady(const FLudeoResult& Result, const FLudeoRoomHandle& InRoomHandle, const FString& PlayerID);
 
 private:
 	FLudeoRoomHandle RoomHandle;
 	FLudeoRoomRemovePlayerParameters Parameters;
-	FString PlayerID;
 };

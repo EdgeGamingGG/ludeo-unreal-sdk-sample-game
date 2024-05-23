@@ -107,11 +107,6 @@ void ULudeoRoomRemovePlayerAsyncNode::Activate()
 
 	if (FLudeoRoom* Room = FLudeoRoom::GetRoomByRoomHandle(RoomHandle))
 	{
-		if (const FLudeoPlayer* Player = Room->GetPlayerByPlayerHandle(Parameters.PlayerHandle))
-		{
-			PlayerID = Player->GetPlayerID();
-		}
-
 		Room->RemovePlayer
 		(
 			Parameters,
@@ -120,16 +115,16 @@ void ULudeoRoomRemovePlayerAsyncNode::Activate()
 	}
 	else
 	{
-		OnResultReady(LudeoResult::InvalidParameters, RoomHandle, Parameters.PlayerHandle);
+		OnResultReady(LudeoResult::InvalidParameters, RoomHandle, Parameters.PlayerID);
 	}
 }
 
-void ULudeoRoomRemovePlayerAsyncNode::OnRemovePlayer(const FLudeoResult& Result, const FLudeoRoomHandle& InRoomHandle, const FLudeoPlayerHandle& InPlayerHandle)
+void ULudeoRoomRemovePlayerAsyncNode::OnRemovePlayer(const FLudeoResult& Result, const FLudeoRoomHandle& InRoomHandle, const FString& PlayerID)
 {
-	OnResultReady(Result, InRoomHandle, InPlayerHandle);
+	OnResultReady(Result, InRoomHandle, PlayerID);
 }
 
-void ULudeoRoomRemovePlayerAsyncNode::OnResultReady(const FLudeoResult& Result, const FLudeoRoomHandle& InRoomHandle, const FLudeoPlayerHandle& InPlayerHandle)
+void ULudeoRoomRemovePlayerAsyncNode::OnResultReady(const FLudeoResult& Result, const FLudeoRoomHandle& InRoomHandle, const FString& PlayerID)
 {
 	if (Result.IsSuccessful())
 	{
@@ -147,7 +142,7 @@ void ULudeoRoomRemovePlayerAsyncNode::OnResultReady(const FLudeoResult& Result, 
 			5.0f
 		);
 
-		OnSuccessDelegate.Broadcast(Result, InRoomHandle, InPlayerHandle);
+		OnSuccessDelegate.Broadcast(Result, InRoomHandle, PlayerID);
 	}
 	else
 	{
@@ -166,7 +161,7 @@ void ULudeoRoomRemovePlayerAsyncNode::OnResultReady(const FLudeoResult& Result, 
 			5.0f
 		);
 
-		OnFailDelegate.Broadcast(Result, InRoomHandle, InPlayerHandle);
+		OnFailDelegate.Broadcast(Result, InRoomHandle, PlayerID);
 	}
 
 	SetReadyToDestroy();

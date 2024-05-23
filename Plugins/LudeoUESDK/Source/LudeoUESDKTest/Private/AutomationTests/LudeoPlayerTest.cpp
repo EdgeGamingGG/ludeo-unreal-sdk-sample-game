@@ -206,14 +206,18 @@ bool FLudeoPlayerGetPlayerByPlayerHandleTest::RunTest(const FString& Parameters)
 				)
 			);
 
-			TestNotNull(TEXT("Player"), FLudeoPlayer::GetPlayerByPlayerHandle(PlayerHandle));
+			const FLudeoPlayer* LudeoPlayer = FLudeoPlayer::GetPlayerByPlayerHandle(PlayerHandle);
+			TestNotNull(TEXT("Player"), LudeoPlayer);
 
-			FLudeoRoomRemovePlayerParameters RemovePlayerParameters{};
-			RemovePlayerParameters.PlayerHandle = PlayerHandle;
+			if(LudeoPlayer != nullptr)
+			{
+				FLudeoRoomRemovePlayerParameters RemovePlayerParameters;
+				RemovePlayerParameters.PlayerID = LudeoPlayer->GetPlayerID();
 
-			Room->RemovePlayer(RemovePlayerParameters);
+				Room->RemovePlayer(RemovePlayerParameters);
 
-			TestNull(TEXT("Player"), FLudeoPlayer::GetPlayerByPlayerHandle(PlayerHandle));
+				TestNull(TEXT("Player"), FLudeoPlayer::GetPlayerByPlayerHandle(PlayerHandle));
+			}
 		}
 	}
 
@@ -421,14 +425,17 @@ bool FLudeoPlayerIsValidTest::RunTest(const FString& Parameters)
 				)
 			);
 
-			TestTrue(TEXT("Player"), pPlayer->IsValid());
+			if(pPlayer != nullptr)
+			{
+				TestTrue(TEXT("Player"), pPlayer->IsValid());
 
-			FLudeoRoomRemovePlayerParameters RemovePlayerParameters{};
-			RemovePlayerParameters.PlayerHandle = *pPlayer;
+				FLudeoRoomRemovePlayerParameters RemovePlayerParameters;
+				RemovePlayerParameters.PlayerID = pPlayer->GetPlayerID();
 
-			Room->RemovePlayer(RemovePlayerParameters);
+				Room->RemovePlayer(RemovePlayerParameters);
 
-			TestFalse(TEXT("Player"), pPlayer->IsValid());
+				TestFalse(TEXT("Player"), pPlayer->IsValid());
+			}
 		}
 	}
 
