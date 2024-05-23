@@ -202,7 +202,10 @@ bool FLudeoObjectStateManager::CreateRestoreWorldObjectMap
 										});
 										check(ActorCollection.Num() == 1);
 
-										return Cast<AActor>(ActorCollection.Last());
+										if(ActorCollection.Num() == 1)
+										{
+											return Cast<AActor>(ActorCollection.Last());
+										}
 									}
 								}
 								else if(SaveGameActorData->Strategy == ELudeoSaveGameStrategy::Purge)
