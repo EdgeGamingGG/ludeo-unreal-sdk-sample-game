@@ -73,6 +73,7 @@ public:
 
 	bool WriteData(const TCHAR* AttributeName, const FLudeoObjectHandle& LudeoObjectHandle) const;
 	bool WriteData(const TCHAR* AttributeName, const UObject* Data, const WritableObjectMapType& ObjectMap) const;
+	bool WriteData(const TCHAR* AttributeName, const FWeakObjectPtr& Data, const WritableObjectMapType& ObjectMap) const;
 
 public:
 	// Struct

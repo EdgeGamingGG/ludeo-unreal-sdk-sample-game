@@ -451,26 +451,8 @@ void FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
 {
 	const auto HandleNonContainerProperty = [&](const FProperty& Property, const void* PropertyContainer)
 	{
-		if (const FStructProperty* StructProperty = CastField<FStructProperty>(&Property))
+		const auto HandleObject = [&](const UObject* Object)
 		{
-			FLudeoObjectPropertyFilter NewObjectPropertyFilter;
-			NewObjectPropertyFilter.MatchingPropertyFlags = ObjectPropertyFilter.MatchingPropertyFlags;
-
-			FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
-			(
-				WorldContextObject,
-				StructProperty->Struct,
-				StructProperty->ContainerPtrToValuePtr<void>(PropertyContainer),
-				NewObjectPropertyFilter,
-				SaveGameSpecification,
-				ObjectSet,
-				HasVisitedObjectSet
-			);
-		}
-		else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(&Property))
-		{
-			const UObject* Object = ObjectProperty->GetObjectPropertyValue(ObjectProperty->ContainerPtrToValuePtr<void>(PropertyContainer));
-
 			if (Object != nullptr)
 			{
 				if (!HasVisitedObjectSet.Contains(Object))
@@ -513,6 +495,35 @@ void FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
 					}
 				}
 			}
+		};
+
+		if (const FStructProperty* StructProperty = CastField<FStructProperty>(&Property))
+		{
+			FLudeoObjectPropertyFilter NewObjectPropertyFilter;
+			NewObjectPropertyFilter.MatchingPropertyFlags = ObjectPropertyFilter.MatchingPropertyFlags;
+
+			FLudeoObjectStateManager::FindObjectToBeSavedFromProperty
+			(
+				WorldContextObject,
+				StructProperty->Struct,
+				StructProperty->ContainerPtrToValuePtr<void>(PropertyContainer),
+				NewObjectPropertyFilter,
+				SaveGameSpecification,
+				ObjectSet,
+				HasVisitedObjectSet
+			);
+		}
+		else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(&Property))
+		{
+			const UObject* Object = ObjectProperty->GetObjectPropertyValue_InContainer(PropertyContainer);
+
+			HandleObject(Object);
+		}
+		else if (const FWeakObjectProperty* WeakObjectProperty = CastField<FWeakObjectProperty>(&Property))
+		{
+			const FWeakObjectPtr& WeakObjectPointer = WeakObjectProperty->GetPropertyValue_InContainer(PropertyContainer);
+
+			HandleObject(WeakObjectPointer.Get());
 		}
 	};
 

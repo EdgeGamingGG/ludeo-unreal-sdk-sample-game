@@ -299,23 +299,20 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FText& Data) con
 
 bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, UClass*& Data) const
 {
-	FString ClassName;
+	FString ClassPathName;
 
-	if (GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), ClassName))
+	if (GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), ClassPathName))
 	{
-		if (ClassName.Len() > 0)
+		if (ClassPathName.Len() > 0)
 		{
-			if (UClass* ObjectClass = FindObject<UClass>(ANY_PACKAGE, *ClassName))
-			{
-				Data = ObjectClass;
-
-				return true;
-			}
+			Data = LoadClass<UObject>(nullptr, *ClassPathName);
 		}
 		else
 		{
 			Data = nullptr;
 		}
+
+		return true;
 	}
 
 	return false;
@@ -329,6 +326,50 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FLudeoObjectHand
 	{
 		Data = FLudeoObjectHandle(ObjectID);
 		
+		return true;
+	}
+
+	return false;
+}
+
+bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, UObject*& Data, const ReadableObjectMapType& ObjectMap) const
+{
+	LudeoObjectId ObjectID = LUDEO_INVALID_OBJECTID;
+
+	if (GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), ObjectID))
+	{
+		const FLudeoObjectHandle LudeoObjectHandle(ObjectID);
+
+		if (LudeoObjectHandle == LUDEO_INVALID_OBJECTID)
+		{
+			Data = nullptr;
+		}
+		else
+		{
+			if (UObject* const* pObject = ObjectMap.FindByHash(GetTypeHash(LudeoObjectHandle), LudeoObjectHandle))
+			{
+				Data = *pObject;
+			}
+			else
+			{
+				check(false);
+			}
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FWeakObjectPtr& Data, const ReadableObjectMapType& ObjectMap) const
+{
+	UObject* Object = nullptr;
+
+	if (ReadData(AttributeName, Object, ObjectMap))
+	{
+		Data = FWeakObjectPtr(Object);
+
 		return true;
 	}
 
@@ -487,29 +528,15 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* Prop
 	}
 	else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
 	{
-		const UObject*& SubObject = const_cast<const UObject*&>(*ObjectProperty->GetPropertyValuePtr_InContainer(PropertyContainer));
+		UObject*& Object = const_cast<UObject*&>(*ObjectProperty->GetPropertyValuePtr_InContainer(PropertyContainer));
 
-		FLudeoObjectHandle LudeoObjectHandle;
-		bIsDataReadSuccessfully = ReadData(AttributeName, LudeoObjectHandle);
+		bIsDataReadSuccessfully = ReadData(AttributeName, Object, ObjectMap);
+	}
+	else if (const FWeakObjectProperty* WeakObjectProperty = CastField<FWeakObjectProperty>(Property))
+	{
+		FWeakObjectPtr& WeakObjectPointer = *WeakObjectProperty->GetPropertyValuePtr_InContainer(const_cast<void*>(PropertyContainer));
 
-		if (bIsDataReadSuccessfully)
-		{
-			if (LudeoObjectHandle == LUDEO_INVALID_OBJECTID)
-			{
-				SubObject = nullptr;
-			}
-			else
-			{
-				if (const UObject* const* pObject = ObjectMap.FindByHash(GetTypeHash(LudeoObjectHandle), LudeoObjectHandle))
-				{
-					SubObject = *pObject;
-				}
-				else
-				{
-					check(false);
-				}
-			}
-		}
+		bIsDataReadSuccessfully = ReadData(AttributeName, WeakObjectPointer, ObjectMap);
 	}
 	else if (const FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
 	{

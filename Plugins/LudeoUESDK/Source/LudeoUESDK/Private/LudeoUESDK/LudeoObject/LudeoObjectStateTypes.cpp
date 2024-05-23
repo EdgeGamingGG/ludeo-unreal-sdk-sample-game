@@ -63,11 +63,7 @@ bool FLudeoSaveGameSpecification::IsSaveGameActor(const AActor* Actor) const
 	{
 		if (const FLudeoSaveGameActorData* SaveGameActorData = GetSaveGameActorData(Actor->GetClass()))
 		{
-			return
-			(
-				SaveGameActorData->Strategy == ELudeoSaveGameStrategy::Reconcile ||
-				SaveGameActorData->Strategy == ELudeoSaveGameStrategy::Purge
-			);
+			return (SaveGameActorData->Strategy != ELudeoSaveGameStrategy::None);
 		}
 	}
 

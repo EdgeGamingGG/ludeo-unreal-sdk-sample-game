@@ -299,9 +299,18 @@ bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FText& Da
 
 bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, UClass* Data) const
 {
-	const FString ClassName = (Data != nullptr ? Data->GetName() : TEXT(""));
+	if (Data != nullptr)
+	{
+		#if WITH_EDITOR
+			const FString ClassPathName = UWorld::RemovePIEPrefix(Data->GetPathName());
+		#else
+			const FString ClassPathName = Data->GetPathName();
+		#endif
 
-	return WriteData(AttributeName, *ClassName);
+		return WriteData(AttributeName, *ClassPathName);
+	}
+
+	return WriteData(AttributeName, FString());
 }
 
 bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FLudeoObjectHandle& LudeoObjectHandle) const
@@ -329,6 +338,11 @@ bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const UObject* 
 	}();
 
 	return WriteData(AttributeName, LudeoObjectHandle);
+}
+
+bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FWeakObjectPtr& Data, const WritableObjectMapType& ObjectMap) const
+{
+	return WriteData(AttributeName, Data.Get(), ObjectMap);
 }
 
 bool FLudeoWritableObject::WriteData
@@ -459,9 +473,15 @@ bool FLudeoWritableObject::WriteData
 	}
 	else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
 	{
-		const UObject* SubObject = ObjectProperty->GetObjectPropertyValue_InContainer(PropertyContainer);
+		const UObject* Object = ObjectProperty->GetObjectPropertyValue_InContainer(PropertyContainer);
 
-		bIsDataWrittenSuccessfully = WriteData(AttributeName, SubObject, ObjectMap);
+		bIsDataWrittenSuccessfully = WriteData(AttributeName, Object, ObjectMap);
+	}
+	else if (const FWeakObjectProperty* WeakObjectProperty = CastField<FWeakObjectProperty>(Property))
+	{
+		const FWeakObjectPtr& WeakObjectPointer = WeakObjectProperty->GetPropertyValue_InContainer(PropertyContainer);
+
+		bIsDataWrittenSuccessfully = WriteData(AttributeName, WeakObjectPointer, ObjectMap);
 	}
 	else if (const FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
 	{	
