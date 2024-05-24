@@ -148,41 +148,44 @@ bool ALudeoGameState::ReportPlayerAction(const APlayerState* PlayerState, const 
 {
 	check(PlayerState != nullptr);
 	
-	UWorld* World = PlayerState->GetWorld();
-	check(World != nullptr);
-
-	const ALudeoGameState* GameState = World->GetGameState<ALudeoGameState>();
-	check(GameState != nullptr);
-
-	static UEnum* Enum = FindObject<UEnum>(ANY_PACKAGE, TNameOf<ELudeoPlayerAction>::GetName());
-	check(Enum != nullptr);
-
 	FLudeoResult Result;
 
-	if (const FLudeoRoom* LudeoRoom = FLudeoRoom::GetRoomByRoomHandle(GameState->LudeoRoomHandle))
+	if(PlayerState != nullptr)
 	{
-		FLudeoRoomWriterSendActionParameters SendActionParameters;
-		SendActionParameters.PlayerID = FString::FromInt(PlayerState->GetPlayerId());
-		SendActionParameters.ActionName = Enum->GetNameByValue(static_cast<int64>(PlayerAction));
+		UWorld* World = PlayerState->GetWorld();
+		check(World != nullptr);
 
-		Result = LudeoRoom->GetRoomWriter().SendAction(SendActionParameters);
+		const ALudeoGameState* GameState = World->GetGameState<ALudeoGameState>();
+		check(GameState != nullptr);
 
-		UKismetSystemLibrary::PrintString
-		(
-			World,
-			*FString::Printf
+		static UEnum* Enum = FindObject<UEnum>(ANY_PACKAGE, TNameOf<ELudeoPlayerAction>::GetName());
+		check(Enum != nullptr);
+
+		if (const FLudeoRoom* LudeoRoom = FLudeoRoom::GetRoomByRoomHandle(GameState->LudeoRoomHandle))
+		{
+			FLudeoRoomWriterSendActionParameters SendActionParameters;
+			SendActionParameters.PlayerID = FString::FromInt(PlayerState->GetPlayerId());
+			SendActionParameters.ActionName = *Enum->GetNameStringByValue(static_cast<int64>(PlayerAction));
+
+			Result = LudeoRoom->GetRoomWriter().SendAction(SendActionParameters);
+
+			UKismetSystemLibrary::PrintString
 			(
-				TEXT("[Player - %s (ID: %d)] Player action %s is reported. Result: %s"),
-				*PlayerState->GetPlayerName(),
-				PlayerState->GetPlayerId(),
-				*SendActionParameters.ActionName.ToString(),
-				ANSI_TO_TCHAR(Result.ToString().GetData())
-			),
-			true,
-			true,
-			FLinearColor(0.0, 0.66, 1.0),
-			5.0f
-		);
+				World,
+				*FString::Printf
+				(
+					TEXT("[Player - %s (ID: %d)] Player action %s is reported. Result: %s"),
+					*PlayerState->GetPlayerName(),
+					PlayerState->GetPlayerId(),
+					*SendActionParameters.ActionName.ToString(),
+					ANSI_TO_TCHAR(Result.ToString().GetData())
+				),
+				true,
+				true,
+				FLinearColor(0.0, 0.66, 1.0),
+				5.0f
+			);
+		}
 	}
 
 	return Result.IsSuccessful();

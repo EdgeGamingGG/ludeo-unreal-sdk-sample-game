@@ -6,11 +6,14 @@
 #include "LudeoUESDK/LudeoLog/LudeoLogTypes.h"
 #include "LudeoUESDK/LudeoResult.h"
 #include "LudeoUESDK/LudeoUtility.h"
+#include "LudeoUESDK/LudeoProfiling.h"
 
 // Suppress unreal wrong deprecated warning
 #undef UInt16Property
 #undef UInt32Property
 #undef UInt64Property
+
+DECLARE_CYCLE_STAT(TEXT("FLudeoWritableObject::ReadData (Object)"), STAT_ReadObject, STATGROUP_Ludeo);
 
 FORCEINLINE uint32 GetTypeHash(const FLudeoReadableObject& ReadableObject)
 {
@@ -700,9 +703,14 @@ bool FLudeoReadableObject::ReadData
 	const FLudeoObjectPropertyFilter& PropertyFilter
 ) const
 {
-	check(Data != nullptr);
+	SCOPE_CYCLE_COUNTER(STAT_ReadObject);
 
-	return InternalReadData(Data->GetClass(), const_cast<UObject*>(Data), ObjectMap, PropertyFilter);
+	if(Data != nullptr)
+	{
+		return InternalReadData(Data->GetClass(), const_cast<UObject*>(Data), ObjectMap, PropertyFilter);
+	}
+
+	return false;
 }
 
 bool FLudeoReadableObject::InternalReadData

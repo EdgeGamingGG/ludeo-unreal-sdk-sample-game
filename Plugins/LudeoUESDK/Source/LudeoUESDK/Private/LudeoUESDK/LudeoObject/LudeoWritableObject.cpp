@@ -7,11 +7,16 @@
 
 #include "LudeoUESDK/LudeoScopedGuard.h"
 #include "LudeoUESDK/LudeoUtility.h"
+#include "LudeoUESDK/LudeoProfiling.h"
 
 // Suppress unreal wrong deprecated warning
 #undef UInt16Property
 #undef UInt32Property
 #undef UInt64Property
+
+DECLARE_CYCLE_STAT(TEXT("FLudeoWritableObject::WriteData (Object)"), STAT_WriteObject, STATGROUP_Ludeo);
+DECLARE_CYCLE_STAT(TEXT("FLudeoWritableObject::BindPlayer"), STAT_BindPlayer, STATGROUP_Ludeo);
+DECLARE_CYCLE_STAT(TEXT("FLudeoWritableObject::UnbindPlayer"), STAT_UnbindPlayer, STATGROUP_Ludeo);
 
 FLudeoResult ConditionalRoomWriterSetCurrent(const FLudeoRoomWriterHandle& RoomWriterHandle)
 {
@@ -117,6 +122,8 @@ bool FLudeoWritableObject::LeaveComponent() const
 
 bool FLudeoWritableObject::BindPlayer(const char* PlayerID) const
 {
+	SCOPE_CYCLE_COUNTER(STAT_BindPlayer);
+
 	const FLudeoResult Result = ConditionalRoomWriterSetCurrent(RoomWriterHandle);
 
 	if (Result.IsSuccessful())
@@ -129,6 +136,8 @@ bool FLudeoWritableObject::BindPlayer(const char* PlayerID) const
 
 bool FLudeoWritableObject::UnbindPlayer() const
 {
+	SCOPE_CYCLE_COUNTER(STAT_UnbindPlayer)
+
 	const FLudeoResult Result = ConditionalRoomWriterSetCurrent(RoomWriterHandle);
 
 	if (Result.IsSuccessful())
@@ -145,6 +154,8 @@ bool FLudeoWritableObject::WriteData
 	const FLudeoObjectPropertyFilter& PropertyFilter
 ) const
 {
+	SCOPE_CYCLE_COUNTER(STAT_WriteObject);
+
 	if(const UObject* Data = WeakObject.Get())
 	{
 		return InternalWriteData(Data->GetClass(), Data, ObjectMap, PropertyFilter);
@@ -302,7 +313,7 @@ bool FLudeoWritableObject::WriteData(const char* AttributeName, const FTransform
 
 bool FLudeoWritableObject::WriteData(const char* AttributeName, const char* Data) const
 {
-	return GenericWriteData(RoomWriterHandle, AttributeName, "");
+	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
 bool FLudeoWritableObject::WriteData(const char* AttributeName, const TCHAR* Data) const

@@ -8,6 +8,14 @@
 #include "LudeoUESDK/LudeoRoom/LudeoRoom.h"
 #include "LudeoUESDK/LudeoScopedGuard.h"
 #include "LudeoUESDK/LudeoUtility.h"
+#include "LudeoUESDK/LudeoProfiling.h"
+
+DECLARE_CYCLE_STAT(TEXT("FLudeoObjectStateManager::SaveWorld"), STAT_SaveWorld, STATGROUP_Ludeo);
+DECLARE_CYCLE_STAT(TEXT("FLudeoObjectStateManager::UpdateSaveWorldObjectMap"), STAT_UpdateSaveWorldObjectMap, STATGROUP_Ludeo);
+DECLARE_CYCLE_STAT(TEXT("FLudeoObjectStateManager::GetObjectToBeSavedSet"), STAT_GetObjectToBeSavedSet, STATGROUP_Ludeo);
+
+DECLARE_CYCLE_STAT(TEXT("FLudeoObjectStateManager::RestoreWorld"), STAT_RestoreWorld, STATGROUP_Ludeo);
+DECLARE_CYCLE_STAT(TEXT("FLudeoObjectStateManager::UpdateRestoreWorldObjectMap"), STAT_UpdateRestoreWorldObjectMap, STATGROUP_Ludeo);
 
 const FLudeoWritableObject* FLudeoObjectStateManager::CreateWritableObject
 (
@@ -60,6 +68,8 @@ void FLudeoObjectStateManager::UpdateSaveWorldObjectMap
 	FLudeoWritableObject::WritableObjectMapType& CurrentObjectMap
 )
 {
+	SCOPE_CYCLE_COUNTER(STAT_UpdateSaveWorldObjectMap);
+
 	check(WorldContextObject != nullptr);
 
 	UWorld* World = WorldContextObject->GetWorld();
@@ -114,6 +124,8 @@ bool FLudeoObjectStateManager::UpdateRestoreWorldObjectMap
 	FLudeoReadableObject::ReadableObjectMapType& CurrentObjectMap
 )
 {
+	SCOPE_CYCLE_COUNTER(STAT_UpdateRestoreWorldObjectMap);
+
 	check(ObjectInformationCollection.Num() == ObjectClassCollection.Num());
 
 	check(WorldContextObject != nullptr);
@@ -606,6 +618,8 @@ const TSet<const UObject*>& FLudeoObjectStateManager::GetObjectToBeSavedSet
 	const FLudeoSaveGameSpecification& SaveGameSpecification
 )
 {
+	SCOPE_CYCLE_COUNTER(STAT_GetObjectToBeSavedSet);
+
 	check(WorldContextObject != nullptr);
 
 	UWorld* World = WorldContextObject->GetWorld();
@@ -727,6 +741,8 @@ bool FLudeoObjectStateManager::SaveWorld
 	FLudeoWritableObject::WritableObjectMapType& CurrentObjectMap
 )
 {
+	SCOPE_CYCLE_COUNTER(STAT_SaveWorld);
+
 	check(WorldContextObject != nullptr);
 
 	UWorld* World = WorldContextObject->GetWorld();
@@ -828,6 +844,8 @@ bool FLudeoObjectStateManager::RestoreWorld
 	FLudeoReadableObject::ReadableObjectMapType& CurrentObjectMap
 )
 {
+	SCOPE_CYCLE_COUNTER(STAT_RestoreWorld);
+
 	FLudeoObjectStateManager::UpdateRestoreWorldObjectMap
 	(
 		WorldContextObject,
