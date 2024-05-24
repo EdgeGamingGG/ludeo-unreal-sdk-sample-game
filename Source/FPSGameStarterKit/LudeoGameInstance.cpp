@@ -221,7 +221,10 @@ bool ULudeoGameInstance::ReleasePendingLudeo()
 
 void ULudeoGameInstance::OnLudeoSelected(const FLudeoSessionHandle& SessionHandle, const FString& LudeoID)
 {
-	if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
+	FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(SessionHandle);
+	check(Session != nullptr);
+
+	if (Session != nullptr)
 	{
 		FLudeoSessionGetLudeoParameters GetLudeoParameters;
 		GetLudeoParameters.LudeoID = LudeoID;

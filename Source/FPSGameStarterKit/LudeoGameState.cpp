@@ -12,6 +12,21 @@
 #include "LudeoGameInstance.h"
 #include "LudeoPlayerController.h"
 
+/*
+*	FName::ToString() returns different result for PlayerId property of APlayerState
+	The PlayerId property has a different ToString() result (PlayerId vs PlayerID) in editor and packaged build
+*/ 
+int32 ReadPlayerID(const FLudeoReadableObject& ReadableObject, const int32 DefaultPlayerID)
+{
+	const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
+
+	int32 PlayerID = DefaultPlayerID;
+	const bool bHasRead = (ReadableObject.ReadData("PlayerId", PlayerID) || ReadableObject.ReadData("PlayerID", PlayerID));
+	check(bHasRead);
+
+	return PlayerID;
+}
+
 ALudeoGameState::ALudeoGameState() :
 	Super(),
 	LudeoGameSessionInitializationState(ELudeoGameSessionInitializationState::NotInitialized)
@@ -664,12 +679,7 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 
 			if (ObjectClass->IsChildOf(APlayerState::StaticClass()))
 			{
-				const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
-
-				// Read PlayerId with either string due to the nature of FName being case-insensitive
-				int32 PlayerID;
-				const bool bHasRead = (ReadableObject.ReadData("PlayerId", PlayerID) || ReadableObject.ReadData("PlayerID", PlayerID));
-				check(bHasRead);
+				const int32 PlayerID = ReadPlayerID(ReadableObject, TNumericLimits<int32>::Max());
 
 				if (Ludeo.GetCreatorPlayerID() == FString::FromInt(PlayerID))
 				{
@@ -763,7 +773,10 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 
 		for (FLudeoReadableObject::ReadableObjectMapType::TConstIterator Itr = RestoreWorldObjectMap.CreateConstIterator(); Itr; ++Itr)
 		{
-			if (USceneComponent* SceneComponent = Cast<USceneComponent>(Itr->Get<1>()))
+			const FLudeoReadableObject& ReadableObject = Itr->Get<0>();
+			UObject* Object = Itr->Get<1>();
+
+			if (USceneComponent* SceneComponent = Cast<USceneComponent>(Object))
 			{
 				if (UPrimitiveComponent* PrimitiveComponent = Cast<UPrimitiveComponent>(SceneComponent))
 				{
@@ -774,6 +787,15 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 				}
 
 				SceneComponent->UpdateComponentToWorld(EUpdateTransformFlags::None, ETeleportType::TeleportPhysics);
+			}
+			else if (APlayerState* PlayerState = Cast<APlayerState>(Object))
+			{	
+				/*
+				*	Normally we don't need to do this, but due to the FName's case-insensitive nature, we have to manually restore the PlayerId
+				*	The PlayerId property has a different ToString() result (PlayerId vs PlayerID) in editor and packaged build
+				*	This results in attribute not found in the Ludeo data, which is case-sensitive
+				*/
+				PlayerState->SetPlayerId(ReadPlayerID(ReadableObject, PlayerState->GetPlayerId()));
 			}
 		}
 	}
