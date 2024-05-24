@@ -87,5 +87,5 @@ struct FLudeoRoomWriterSendActionParameters
 	FString PlayerID;
 
 	UPROPERTY(Transient, BlueprintReadWrite)
-	FString ActionName;
+	FName ActionName;
 };

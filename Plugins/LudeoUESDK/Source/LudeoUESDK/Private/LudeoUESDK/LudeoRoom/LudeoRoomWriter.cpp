@@ -9,6 +9,7 @@
 
 #include "LudeoUESDK/LudeoObject/LudeoObject.h"
 #include "LudeoUESDK/LudeoSession/LudeoSessionManager.h"
+#include "LudeoUESDK/LudeoUtility.h"
 
 FLudeoRoomWriter::FLudeoRoomWriter(const FLudeoRoomWriterHandle& InRoomWriterHandle) :
 	RoomWriterHandle(InRoomWriterHandle)
@@ -83,23 +84,16 @@ FLudeoResult FLudeoRoomWriter::DestroyObject(const FLudeoRoomWriterDestroyObject
 	);
 }
 
-FLudeoResult FLudeoRoomWriter::SendAction(const FLudeoRoomWriterSendActionParameters& SendActionParameters) const
+FLudeoResult FLudeoRoomWriter::SendAction(const char* PlayerID, const char* ActionName) const
 {
-	const FTCHARToUTF8 PlayerIDStringConverter
-	(
-		SendActionParameters.PlayerID.GetCharArray().GetData(),
-		SendActionParameters.PlayerID.GetCharArray().Num()
-	);
-
-	const FTCHARToUTF8 PlayerActionStringConverter
-	(
-		SendActionParameters.ActionName.GetCharArray().GetData(),
-		SendActionParameters.ActionName.GetCharArray().Num()
-	);
-
 	LudeoDataWriterSendActionParams InternalSendActionParams = Ludeo::create<LudeoDataWriterSendActionParams>();
-	InternalSendActionParams.playerId = PlayerIDStringConverter.Get();
-	InternalSendActionParams.action = PlayerActionStringConverter.Get();
+	InternalSendActionParams.playerId = PlayerID;
+	InternalSendActionParams.action = LUDEO_FNAME_TO_UTF8(ActionName);
 
 	return ludeo_DataWriter_SendAction(RoomWriterHandle, &InternalSendActionParams);
+}
+
+FLudeoResult FLudeoRoomWriter::SendAction(const FLudeoRoomWriterSendActionParameters& SendActionParameters) const
+{
+	return SendAction(TCHAR_TO_UTF8(*SendActionParameters.PlayerID), LUDEO_FNAME_TO_UTF8(SendActionParameters.ActionName));
 }

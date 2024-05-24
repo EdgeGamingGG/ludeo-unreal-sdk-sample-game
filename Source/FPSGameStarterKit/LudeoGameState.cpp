@@ -162,8 +162,8 @@ bool ALudeoGameState::ReportPlayerAction(const APlayerState* PlayerState, const 
 	if (const FLudeoRoom* LudeoRoom = FLudeoRoom::GetRoomByRoomHandle(GameState->LudeoRoomHandle))
 	{
 		FLudeoRoomWriterSendActionParameters SendActionParameters;
-		SendActionParameters.ActionName = Enum->GetNameStringByValue(static_cast<int64>(PlayerAction));
 		SendActionParameters.PlayerID = FString::FromInt(PlayerState->GetPlayerId());
+		SendActionParameters.ActionName = Enum->GetNameByValue(static_cast<int64>(PlayerAction));
 
 		Result = LudeoRoom->GetRoomWriter().SendAction(SendActionParameters);
 
@@ -175,7 +175,7 @@ bool ALudeoGameState::ReportPlayerAction(const APlayerState* PlayerState, const 
 				TEXT("[Player - %s (ID: %d)] Player action %s is reported. Result: %s"),
 				*PlayerState->GetPlayerName(),
 				PlayerState->GetPlayerId(),
-				*SendActionParameters.ActionName,
+				*SendActionParameters.ActionName.ToString(),
 				ANSI_TO_TCHAR(Result.ToString().GetData())
 			),
 			true,

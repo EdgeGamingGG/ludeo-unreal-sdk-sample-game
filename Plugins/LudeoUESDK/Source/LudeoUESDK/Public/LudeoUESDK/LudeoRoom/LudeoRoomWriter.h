@@ -22,6 +22,7 @@ public:
 	TOptionalWithLudeoResult<FLudeoWritableObject> CreateObject(const FLudeoRoomWriterCreateObjectParameters& CreateObjectParameters) const;
 	FLudeoResult DestroyObject(const FLudeoRoomWriterDestroyObjectParameters& DestroyObjectParameters) const;
 
+	FLudeoResult SendAction(const char* PlayerID, const char* ActionName) const;
 	FLudeoResult SendAction(const FLudeoRoomWriterSendActionParameters& SendActionParameters) const;
 
 private:

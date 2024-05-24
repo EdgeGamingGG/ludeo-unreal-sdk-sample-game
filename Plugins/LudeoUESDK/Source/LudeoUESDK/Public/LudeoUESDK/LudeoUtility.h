@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 
-#if 0 && WITH_EDITOR
-	#define LUDEO_FNAME_TO_UTF8(Name) TCHAR_TO_UTF8(*Name.ToString())
-#else
+#if 1
 	#define LUDEO_FNAME_TO_UTF8(Name) FLudeoUtility::FastConvertAttributeFNameToCString(Name)
+#else
+	#define LUDEO_FNAME_TO_UTF8(Name) TCHAR_TO_UTF8(*Name.ToString())
 #endif
 
 class FLudeoUtility
