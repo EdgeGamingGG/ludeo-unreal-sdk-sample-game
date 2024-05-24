@@ -273,7 +273,7 @@ bool FLudeoReadableObjectReadDataTest::RunTest(const FString& Parameters)
 			ludeo_DataReader_GetString,
 			[](const char*, char* OutValue)
 			{
-				const FTCHARToUTF8 Converter(*AActor::StaticClass()->GetName());
+				const FTCHARToUTF8 Converter(*AActor::StaticClass()->GetPathName());
 
 				FMemory::Memcpy(OutValue, Converter.Get(), Converter.Length());
 
@@ -285,7 +285,7 @@ bool FLudeoReadableObjectReadDataTest::RunTest(const FString& Parameters)
 			ludeo_DataReader_GetSize,
 			[](const char*, uint32_t* OutSize)
 			{
-				const FTCHARToUTF8 Converter(*AActor::StaticClass()->GetName());
+				const FTCHARToUTF8 Converter(*AActor::StaticClass()->GetPathName());
 				*OutSize = static_cast<uint32_t>(Converter.Length());
 
 				return LUDEO_TRUE;
