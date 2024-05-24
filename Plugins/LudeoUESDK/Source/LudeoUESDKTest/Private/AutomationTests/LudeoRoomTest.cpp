@@ -106,12 +106,12 @@ bool FLudeoRoomGetRoomByRoomHandleTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -143,7 +143,7 @@ bool FLudeoRoomGetRoomByRoomHandleTest::RunTest(const FString& Parameters)
 				},
 				[&]()
 				{
-					FLudeoSessionCloseRoomParameters CloseRoomParameters{};
+					FLudeoSessionCloseRoomParameters CloseRoomParameters;
 					CloseRoomParameters.RoomHandle = RoomHandle;
 
 					Session->CloseRoom(CloseRoomParameters);
@@ -282,12 +282,12 @@ bool FLudeoRoomAddPlayerTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -318,7 +318,7 @@ bool FLudeoRoomAddPlayerTest::RunTest(const FString& Parameters)
 				}
 			);
 
-			FLudeoRoomAddPlayerParameters AddPlayerParameters{};
+			FLudeoRoomAddPlayerParameters AddPlayerParameters;
 			AddPlayerParameters.PlayerID = TEXT("Dad Beef");
 
 			bool bHasReceivedResult = false;
@@ -487,12 +487,12 @@ bool FLudeoRoomRemovePlayerTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -523,10 +523,10 @@ bool FLudeoRoomRemovePlayerTest::RunTest(const FString& Parameters)
 				}
 			);
 
-			FLudeoRoomAddPlayerParameters AddPlayerParameters{};
+			FLudeoRoomAddPlayerParameters AddPlayerParameters;
 			AddPlayerParameters.PlayerID = TEXT("Bad Beef");
 
-			FLudeoRoomRemovePlayerParameters RemovePlayerParameters{};
+			FLudeoRoomRemovePlayerParameters RemovePlayerParameters;
 
 			Room->AddPlayer
 			(
@@ -665,12 +665,12 @@ bool FLudeoRoomIsValidTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -710,7 +710,7 @@ bool FLudeoRoomIsValidTest::RunTest(const FString& Parameters)
 				},
 				[&]()
 				{
-					FLudeoSessionCloseRoomParameters CloseRoomParameters{};
+					FLudeoSessionCloseRoomParameters CloseRoomParameters;
 					CloseRoomParameters.RoomHandle = *pRoom;
 
 					Session->CloseRoom(CloseRoomParameters);

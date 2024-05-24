@@ -48,7 +48,7 @@ bool FLudeoSessionManagerCreateSessionTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 
 				TestNotNull(TEXT("Session"), Session);
@@ -61,7 +61,7 @@ bool FLudeoSessionManagerCreateSessionTest::RunTest(const FString& Parameters)
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -108,13 +108,13 @@ bool FLudeoSessionManagerDestroySessionTest::RunTest(const FString& Parameters)
 
 	if (DetourFunction.IsDetoured())
 	{
-		FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+		FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 
 		const FScopedFuctionExecutionGuard Guard
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
@@ -201,7 +201,7 @@ bool FLudeoSessionManagerGetSessionBySessionHandleTest::RunTest(const FString& P
 					FLudeoSessionManager::GetInstance()->GetSessionBySessionHandle(SessionHandle)
 				);
 
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				SessionHandle = *FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 
 				TestNotNull
@@ -212,7 +212,7 @@ bool FLudeoSessionManagerGetSessionBySessionHandleTest::RunTest(const FString& P
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = SessionHandle;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);

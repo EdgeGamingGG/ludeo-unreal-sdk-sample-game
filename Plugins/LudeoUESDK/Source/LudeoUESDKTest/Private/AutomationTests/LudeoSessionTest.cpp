@@ -119,12 +119,12 @@ bool FLudeoSessionGetLudeoTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -251,12 +251,12 @@ bool FLudeoSessionActivateTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -375,19 +375,19 @@ bool FLudeoSessionOpenRoomTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
 			}
 		);
 
-		FLudeoSessionOpenRoomParameters OpenRoomParameters{};
+		FLudeoSessionOpenRoomParameters OpenRoomParameters;
 		OpenRoomParameters.LudeoID = FString();
 		OpenRoomParameters.RoomID = FString();
 
@@ -520,12 +520,12 @@ bool FLudeoSessionCloseRoomTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -679,12 +679,12 @@ bool FLudeoSessionGetRoomByRoomHandleTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -723,7 +723,7 @@ bool FLudeoSessionGetRoomByRoomHandleTest::RunTest(const FString& Parameters)
 				},
 				[&]()
 				{
-					FLudeoSessionCloseRoomParameters CloseRoomParameters{};
+					FLudeoSessionCloseRoomParameters CloseRoomParameters;
 					CloseRoomParameters.RoomHandle = *Room;
 
 					Session->CloseRoom(CloseRoomParameters);
@@ -877,12 +877,12 @@ bool FLudeoSessionGetRoomByPlayerHandleTest::RunTest(const FString& Parameters)
 		(
 			[&]()
 			{
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				Session = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *Session;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -925,7 +925,7 @@ bool FLudeoSessionGetRoomByPlayerHandleTest::RunTest(const FString& Parameters)
 
 			TestNull(TEXT("Room"), Session->GetRoomByPlayerHandle(PlayerHandle));
 
-			FLudeoRoomAddPlayerParameters AddPlayerParameters{};
+			FLudeoRoomAddPlayerParameters AddPlayerParameters;
 			AddPlayerParameters.PlayerID = TEXT("Bad Beef");
 
 			Room->AddPlayer
@@ -998,14 +998,14 @@ bool FLudeoSessionGetSessionBySessionHandleTest::RunTest(const FString& Paramete
 				{	
 					TestNull(TEXT("Session"), FLudeoSession::GetSessionBySessionHandle(SessionHandle));
 
-					const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+					const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 					SessionHandle = *FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 
 					TestNotNull(TEXT("Session"), FLudeoSession::GetSessionBySessionHandle(SessionHandle));
 				},
 				[&]()
 				{
-					FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+					FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 					DestroyLudeoSessionParameters.SessionHandle = SessionHandle;
 
 					FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
@@ -1064,14 +1064,14 @@ bool FLudeoSessionIsValidTest::RunTest(const FString& Parameters)
 			{
 				TestFalse(TEXT("Session Validity"), pSession->IsValid());
 
-				const FCreateLudeoSessionParameters CreateLudeoSessionParameters{};
+				const FCreateLudeoSessionParameters CreateLudeoSessionParameters;
 				pSession = FLudeoSessionManager::GetInstance()->CreateSession(CreateLudeoSessionParameters);
 
 				TestTrue(TEXT("Session Validity"), pSession->IsValid());
 			},
 			[&]()
 			{
-				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters{};
+				FDestroyLudeoSessionParameters DestroyLudeoSessionParameters;
 				DestroyLudeoSessionParameters.SessionHandle = *pSession;
 
 				FLudeoSessionManager::GetInstance()->DestroySession(DestroyLudeoSessionParameters);
