@@ -4,7 +4,7 @@
 
 #include "LudeoUESDK/LudeoPlayer/LudeoPlayer.h"
 
-ULudeoPlayerBeginGameplayAsyncNode* ULudeoPlayerBeginGameplayAsyncNode::LudeoPlayerBeginGameplay
+ULudeoPlayerBeginGameplayAsyncNode* ULudeoPlayerBeginGameplayAsyncNode::BeginGameplay
 (
 	UObject* WorldContextObject,
 	const FLudeoPlayerHandle& InPlayerHandle,
@@ -69,11 +69,9 @@ void ULudeoPlayerBeginGameplayAsyncNode::OnResultReady(const FLudeoResult& Resul
 
 		OnFailDelegate.Broadcast(Result, InPlayerHandle);
 	}
-
-	SetReadyToDestroy();
 }
 
-ULudeoPlayerEndGameplayAsyncNode* ULudeoPlayerEndGameplayAsyncNode::LudeoPlayerEndGameplay
+ULudeoPlayerEndGameplayAsyncNode* ULudeoPlayerEndGameplayAsyncNode::EndGameplay
 (
 	UObject* WorldContextObject,
 	const FLudeoPlayerHandle& InPlayerHandle,
@@ -138,6 +136,4 @@ void ULudeoPlayerEndGameplayAsyncNode::OnResultReady(const FLudeoResult& Result,
 
 		OnFailDelegate.Broadcast(Result, InPlayerHandle);
 	}
-
-	SetReadyToDestroy();
 }

@@ -55,8 +55,8 @@ class LUDEOUESDK_API ULudeoSessionSubscribeNotificationAsyncNodeBase : public UB
 public:
 	virtual void Activate() override;
 
-private:
-	void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle);
+protected:
+	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle);
 
 protected:
 	FLudeoSessionHandle SessionHandle;
@@ -89,7 +89,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode* LudeoSessionSubscribeToOnLudeoSelectedNotification
+	static ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode* SubscribeOnLudeoSelectedNotification
 	(
 		UObject* WorldContextObject,
 		const FLudeoSessionHandle& InSessionHandle,
@@ -99,6 +99,7 @@ public:
 	virtual void Activate() override;
 
 private:
+	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnLudeoSelected(const FLudeoSessionHandle& InSessionHandle, const FString& LudeoID);
 
 private:
@@ -132,7 +133,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode* LudeoSessionSubscribeToOnPauseGameRequestedNotification
+	static ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode* SubscribeToOnPauseGameRequestedNotification
 	(
 		UObject* WorldContextObject,
 		const FLudeoSessionHandle& InSessionHandle,
@@ -142,6 +143,7 @@ public:
 	virtual void Activate() override;
 
 private:
+	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnPauseGameRequested(const FLudeoSessionHandle& InSessionHandle);
 
 private:
@@ -175,7 +177,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode* LudeoSessionSubscribeToOnResumeGameRequestedNotification
+	static ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode* SubscribeToOnResumeGameRequestedNotification
 	(
 		UObject* WorldContextObject,
 		const FLudeoSessionHandle& InSessionHandle,
@@ -185,6 +187,7 @@ public:
 	virtual void Activate() override;
 
 private:
+	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnResumeGameRequested(const FLudeoSessionHandle& InSessionHandle);
 
 private:
@@ -218,7 +221,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode* LudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotification
+	static ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode* SubscribeToOnGameBackToMainMenuRequestedNotification
 	(
 		UObject* WorldContextObject,
 		const FLudeoSessionHandle& InSessionHandle,
@@ -228,6 +231,7 @@ public:
 	virtual void Activate() override;
 
 private:
+	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnGameBackToMainMenuRequested(const FLudeoSessionHandle& InSessionHandle);
 
 private:
@@ -261,7 +265,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode* LudeoSessionSubscribeToOnRoomReadyNotification
+	static ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode* SubscribeToOnRoomReadyNotification
 	(
 		UObject* WorldContextObject,
 		const FLudeoSessionHandle& InSessionHandle,
@@ -271,6 +275,7 @@ public:
 	virtual void Activate() override;
 
 private:
+	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnRoomReady(const FLudeoSessionHandle& InSessionHandle, const FLudeoRoomHandle& InRoomHandle);
 
 private:
@@ -301,7 +306,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoSessionActivateSessionAsyncNode* ActivateLudeoSession
+	static ULudeoSessionActivateSessionAsyncNode* ActivateSession
 	(
 		UObject* WorldContextObject,
 		const FLudeoSessionHandle& InSessionHandle,
@@ -323,6 +328,54 @@ private:
 private:
 	FLudeoSessionHandle SessionHandle;
 	FLudeoSessionActivateSessionParameters Parameters;
+};
+
+UCLASS()
+class ULudeoSessionGetLudeoAsyncNode : public UBlueprintAsyncActionBase
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "On Success"))
+	FLudeoSessionOnGetLudeoDynamicMulticastDelegate OnSuccessDelegate;
+
+	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "On Fail"))
+	FLudeoSessionOnGetLudeoDynamicMulticastDelegate OnFailDelegate;
+
+	UFUNCTION
+	(
+		BlueprintCallable,
+		meta =
+		(
+			Category = "Ludeo Session",
+			DisplayName = "Ludeo Session Get Ludeo",
+			BlueprintInternalUseOnly = "true",
+			DefaultToSelf = "WorldContextObject",
+			HidePin = "WorldContextObject"
+		)
+	)
+	static ULudeoSessionGetLudeoAsyncNode* GetLudeo
+	(
+		UObject* WorldContextObject,
+		const FLudeoSessionHandle& InSessionHandle,
+		const FLudeoSessionGetLudeoParameters& InParameters
+	);
+
+	virtual void Activate() override;
+
+private:
+	void OnGetLudeo(const FLudeoResult& Result, const FLudeoSessionHandle& SessionHandle, const FLudeoHandle& LudeoHandle);
+
+	void OnResultReady
+	(
+		const FLudeoResult& Result,
+		const FLudeoSessionHandle& InSessionHandle,
+		const FLudeoHandle& LudeoHandle
+	);
+
+private:
+	FLudeoSessionHandle SessionHandle;
+	FLudeoSessionGetLudeoParameters Parameters;
 };
 
 UCLASS()
@@ -349,7 +402,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoSessionOpenRoomAsyncNode* LudeoSessionOpenRoom
+	static ULudeoSessionOpenRoomAsyncNode* OpenRoom
 	(
 		UObject* WorldContextObject,
 		const FLudeoSessionHandle& InSessionHandle,
@@ -392,7 +445,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoSessionCloseRoomAsyncNode* LudeoSessionCloseRoom
+	static ULudeoSessionCloseRoomAsyncNode* CloseRoom
 	(
 		UObject* WorldContextObject,
 		const FLudeoSessionHandle& InSessionHandle,

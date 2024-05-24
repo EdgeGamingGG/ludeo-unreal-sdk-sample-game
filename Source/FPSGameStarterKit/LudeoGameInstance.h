@@ -55,7 +55,7 @@ public:
 	void LoadMainMenu();
 
 	UFUNCTION(BlueprintCallable)
-	void LoadLudeo(const FString& LudeoID);
+	bool LoadLudeo(const FLudeoHandle& LudeoHandle);
 
 	const FLudeoHandle& GetPendingLudeoHandle() const
 	{

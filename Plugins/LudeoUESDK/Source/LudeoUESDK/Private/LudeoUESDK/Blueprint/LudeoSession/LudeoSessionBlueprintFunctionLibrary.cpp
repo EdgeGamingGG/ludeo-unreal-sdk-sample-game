@@ -15,7 +15,7 @@ FLudeoSessionHandle ULudeoSessionBlueprintFunctionLibrary::CreateLudeoSession()
 	return nullptr;
 }
 
-bool ULudeoSessionBlueprintFunctionLibrary::LudeoSessionOpenGallery(const FLudeoSessionHandle& SessionHandle)
+bool ULudeoSessionBlueprintFunctionLibrary::OpenGallery(const FLudeoSessionHandle& SessionHandle)
 {
 	if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
 	{

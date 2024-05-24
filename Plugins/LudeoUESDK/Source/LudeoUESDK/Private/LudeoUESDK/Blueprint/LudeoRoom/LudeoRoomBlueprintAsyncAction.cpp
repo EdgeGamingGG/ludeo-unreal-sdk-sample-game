@@ -2,7 +2,7 @@
 
 #include "LudeoUESDK/LudeoRoom/LudeoRoom.h"
 
-ULudeoRoomAddPlayerAsyncNode* ULudeoRoomAddPlayerAsyncNode::LudeoRoomAddPlayer
+ULudeoRoomAddPlayerAsyncNode* ULudeoRoomAddPlayerAsyncNode::AddPlayer
 (
 	UObject* WorldContextObject,
 	const FLudeoRoomHandle& InRoomHandle,
@@ -80,12 +80,10 @@ void ULudeoRoomAddPlayerAsyncNode::OnResultReady(const FLudeoResult& Result, con
 
 		OnFailDelegate.Broadcast(Result, InRoomHandle, InPlayerHandle);
 	}
-
-	SetReadyToDestroy();
 }
 
 
-ULudeoRoomRemovePlayerAsyncNode* ULudeoRoomRemovePlayerAsyncNode::LudeoRoomRemovePlayer
+ULudeoRoomRemovePlayerAsyncNode* ULudeoRoomRemovePlayerAsyncNode::RemovePlayer
 (
 	UObject* WorldContextObject,
 	const FLudeoRoomHandle& InRoomHandle,
@@ -163,6 +161,4 @@ void ULudeoRoomRemovePlayerAsyncNode::OnResultReady(const FLudeoResult& Result, 
 
 		OnFailDelegate.Broadcast(Result, InRoomHandle, PlayerID);
 	}
-
-	SetReadyToDestroy();
 }

@@ -2,7 +2,7 @@
 
 #include "LudeoUESDK/Ludeo/Ludeo.h"
 
-FString ULudeoBlueprintFunctionLibrary::LudeoGetLudeoID(const FLudeoHandle& LudeoHandle)
+FString ULudeoBlueprintFunctionLibrary::GetLudeoID(const FLudeoHandle& LudeoHandle)
 {
 	if (const FLudeo* Ludeo = FLudeo::GetLudeoByLudeoHandle(LudeoHandle))
 	{
@@ -12,7 +12,7 @@ FString ULudeoBlueprintFunctionLibrary::LudeoGetLudeoID(const FLudeoHandle& Lude
 	return FString();
 }
 
-FString ULudeoBlueprintFunctionLibrary::LudeoGetCreatorPlayerID(const FLudeoHandle& LudeoHandle)
+FString ULudeoBlueprintFunctionLibrary::GetCreatorPlayerID(const FLudeoHandle& LudeoHandle)
 {
 	if (const FLudeo* Ludeo = FLudeo::GetLudeoByLudeoHandle(LudeoHandle))
 	{

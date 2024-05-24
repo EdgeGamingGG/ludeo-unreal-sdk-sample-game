@@ -13,14 +13,14 @@ class ULudeoRoomWriterBlueprintFunctionLibrary : public UBlueprintFunctionLibrar
 
 public:
 	UFUNCTION(BlueprintCallable, meta = (Category = "Ludeo Data Writer", DisplayName = "Ludeo Data Writer Set Send Settings"))
-	static bool LudeoRoomWriterSetSendSettings
+	static bool SetSendSettings
 	(
 		const FLudeoRoomHandle& RoomHandle,
 		const FLudeoRoomWriterSetSendSettingsParameters& SetSendSettingsParameters
 	);
 
 	UFUNCTION(BlueprintCallable, meta = (Category = "Ludeo Object", DisplayName = "Ludeo Room Writer Send Action"))
-	static bool LudeoRoomWriterSendAction
+	static bool SendAction
 	(
 		const FLudeoRoomHandle& RoomHandle,
 		const FLudeoRoomWriterSendActionParameters& SendActionParameters

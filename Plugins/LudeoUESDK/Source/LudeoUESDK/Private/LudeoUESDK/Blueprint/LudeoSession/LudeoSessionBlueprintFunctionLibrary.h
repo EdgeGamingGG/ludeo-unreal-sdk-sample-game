@@ -16,7 +16,7 @@ public:
 	static FLudeoSessionHandle CreateLudeoSession();
 
 	UFUNCTION(BlueprintPure, meta = (Category = "Ludeo Session", DisplayName = "Ludeo Session Open Gallery"))
-	static bool LudeoSessionOpenGallery(const FLudeoSessionHandle& SessionHandle);
+	static bool OpenGallery(const FLudeoSessionHandle& SessionHandle);
 
 	UFUNCTION(BlueprintPure, meta = (Category = "Ludeo Session", DisplayName = "Is Valid Ludeo Session Handle"))
 	static bool IsValidLudeoSessionHandle(const FLudeoSessionHandle& SessionHandle);

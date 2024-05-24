@@ -79,11 +79,18 @@ FLudeoSessionHandle ULudeoGameInstance::GetActiveLudeoSessionHandle(const UObjec
 	return GameInstance->LudeoSessionHandle.Get(nullptr);
 }
 
-void ULudeoGameInstance::LoadLudeo(const FString& LudeoID)
+bool ULudeoGameInstance::LoadLudeo(const FLudeoHandle& LudeoHandle)
 {
 	check(LudeoSessionHandle.IsSet());
 
-	OnLudeoSelected(LudeoSessionHandle.GetValue(), LudeoID);
+	if(const FLudeo* Ludeo = FLudeo::GetLudeoByLudeoHandle(LudeoHandle))
+	{
+		OnGetLudeo(LudeoResult::Success, LudeoSessionHandle.GetValue(), *Ludeo);
+
+		return (PendingLudeoHandle == LudeoHandle);
+	}
+
+	return false;
 }
 
 void ULudeoGameInstance::LoadMainMenu()
@@ -216,9 +223,12 @@ void ULudeoGameInstance::OnLudeoSelected(const FLudeoSessionHandle& SessionHandl
 {
 	if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
 	{
+		FLudeoSessionGetLudeoParameters GetLudeoParameters;
+		GetLudeoParameters.LudeoID = LudeoID;
+
 		Session->GetLudeo
 		(
-			LudeoID,
+			GetLudeoParameters,
 			FLudeoSessionOnGetLudeoDelegate::CreateUObject(this, &ULudeoGameInstance::OnGetLudeo)
 		);
 	}

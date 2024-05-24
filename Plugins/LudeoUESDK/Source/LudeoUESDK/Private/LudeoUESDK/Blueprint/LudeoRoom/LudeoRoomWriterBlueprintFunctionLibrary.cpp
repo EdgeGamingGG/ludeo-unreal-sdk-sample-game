@@ -3,7 +3,7 @@
 #include "LudeoUESDK/LudeoRoom/LudeoRoom.h"
 #include "LudeoUESDK/LudeoRoom/LudeoRoomWriterTypes.h"
 
-bool ULudeoRoomWriterBlueprintFunctionLibrary::LudeoRoomWriterSetSendSettings
+bool ULudeoRoomWriterBlueprintFunctionLibrary::SetSendSettings
 (
 	const FLudeoRoomHandle& RoomHandle,
 	const FLudeoRoomWriterSetSendSettingsParameters& SetSendSettingsParameters
@@ -19,7 +19,7 @@ bool ULudeoRoomWriterBlueprintFunctionLibrary::LudeoRoomWriterSetSendSettings
 	return false;
 }
 
-bool ULudeoRoomWriterBlueprintFunctionLibrary::LudeoRoomWriterSendAction
+bool ULudeoRoomWriterBlueprintFunctionLibrary::SendAction
 (
 	const FLudeoRoomHandle& RoomHandle,
 	const FLudeoRoomWriterSendActionParameters& SendActionParameters

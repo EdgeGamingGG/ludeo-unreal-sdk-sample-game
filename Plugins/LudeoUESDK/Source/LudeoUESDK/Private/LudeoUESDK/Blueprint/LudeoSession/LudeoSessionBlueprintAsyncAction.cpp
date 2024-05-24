@@ -67,8 +67,6 @@ void ULudeoDestroySessionAsyncNode::OnResultReady(const FLudeoResult& Result, co
 
 		OnFailDelegate.Broadcast(Result, InSessionHandle);
 	}
-
-	SetReadyToDestroy();
 }
 
 void ULudeoSessionSubscribeNotificationAsyncNodeBase::Activate()
@@ -77,21 +75,14 @@ void ULudeoSessionSubscribeNotificationAsyncNodeBase::Activate()
 	{
 		Session->GetOnDestroySessionDelegate().AddUObject(this, &ULudeoSessionSubscribeNotificationAsyncNodeBase::OnLudeoSessionDestroyed);
 	}
-	else
-	{
-		SetReadyToDestroy();
-	}
 }
 
-void ULudeoSessionSubscribeNotificationAsyncNodeBase::OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle)
+void ULudeoSessionSubscribeNotificationAsyncNodeBase::OnLudeoSessionDestroyed(const FLudeoResult&, const FLudeoSessionHandle&)
 {
-	if (Result.IsSuccessful())
-	{
-		SetReadyToDestroy();
-	}
+
 }
 
-ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode* ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode::LudeoSessionSubscribeToOnLudeoSelectedNotification
+ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode* ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode::SubscribeOnLudeoSelectedNotification
 (
 	UObject* WorldContextObject,
 	const FLudeoSessionHandle& InSessionHandle,
@@ -130,6 +121,16 @@ void ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode::Activate()
 	}
 }
 
+void ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode::OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle)
+{
+	Super::OnLudeoSessionDestroyed(Result, InSessionHandle);
+
+	if(Result.IsSuccessful())
+	{
+		OnFailDelegate.Broadcast(LudeoResult::Canceled, SessionHandle, FString());
+	}
+}
+
 void ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode::OnLudeoSelected
 (
 	const FLudeoSessionHandle& InSessionHandle,
@@ -153,7 +154,7 @@ void ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode::OnLudeoSelect
 	OnLudeoSelectedDelegate.Broadcast(LudeoResult::Success, InSessionHandle, LudeoID);
 }
 
-ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode* ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode::LudeoSessionSubscribeToOnPauseGameRequestedNotification
+ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode* ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode::SubscribeToOnPauseGameRequestedNotification
 (
 	UObject* WorldContextObject,
 	const FLudeoSessionHandle& InSessionHandle,
@@ -192,6 +193,16 @@ void ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode::Activate
 	}
 }
 
+void ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode::OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle)
+{
+	Super::OnLudeoSessionDestroyed(Result, InSessionHandle);
+
+	if(Result.IsSuccessful())
+	{
+		OnFailDelegate.Broadcast(LudeoResult::Canceled, SessionHandle);
+	}
+}
+
 void ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode::OnPauseGameRequested
 (
 	const FLudeoSessionHandle& InSessionHandle
@@ -210,7 +221,7 @@ void ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode::OnPauseG
 	OnPauseGameRequestedDelegate.Broadcast(LudeoResult::Success, InSessionHandle);
 }
 
-ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode* ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode::LudeoSessionSubscribeToOnResumeGameRequestedNotification
+ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode* ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode::SubscribeToOnResumeGameRequestedNotification
 (
 	UObject* WorldContextObject,
 	const FLudeoSessionHandle& InSessionHandle,
@@ -249,6 +260,16 @@ void ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode::Activat
 	}
 }
 
+void ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode::OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle)
+{
+	Super::OnLudeoSessionDestroyed(Result, InSessionHandle);
+
+	if (Result.IsSuccessful())
+	{
+		OnFailDelegate.Broadcast(LudeoResult::Canceled, SessionHandle);
+	}
+}
+
 void ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode::OnResumeGameRequested
 (
 	const FLudeoSessionHandle& InSessionHandle
@@ -267,7 +288,7 @@ void ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode::OnResum
 	OnResumeGameRequestedDelegate.Broadcast(LudeoResult::Success, InSessionHandle);
 }
 
-ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode* ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode::LudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotification
+ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode* ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode::SubscribeToOnGameBackToMainMenuRequestedNotification
 (
 	UObject* WorldContextObject,
 	const FLudeoSessionHandle& InSessionHandle,
@@ -306,6 +327,16 @@ void ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode:
 	}
 }
 
+void ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode::OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle)
+{
+	Super::OnLudeoSessionDestroyed(Result, InSessionHandle);
+
+	if(Result.IsSuccessful())
+	{
+		OnFailDelegate.Broadcast(LudeoResult::Canceled, SessionHandle);
+	}
+}
+
 void ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode::OnGameBackToMainMenuRequested
 (
 	const FLudeoSessionHandle& InSessionHandle
@@ -324,7 +355,7 @@ void ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode:
 	OnGameBackToMainMenuRequestedDelegate.Broadcast(LudeoResult::Success, InSessionHandle);
 }
 
-ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode* ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode::LudeoSessionSubscribeToOnRoomReadyNotification
+ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode* ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode::SubscribeToOnRoomReadyNotification
 (
 	UObject* WorldContextObject,
 	const FLudeoSessionHandle& InSessionHandle,
@@ -363,6 +394,16 @@ void ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode::Activate()
 	}
 }
 
+void ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode::OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle)
+{
+	Super::OnLudeoSessionDestroyed(Result, InSessionHandle);
+
+	if (Result.IsSuccessful())
+	{
+		OnFailDelegate.Broadcast(LudeoResult::Canceled, SessionHandle, nullptr);
+	}
+}
+
 void ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode::OnRoomReady
 (
 	const FLudeoSessionHandle& InSessionHandle,
@@ -382,7 +423,7 @@ void ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode::OnRoomReady
 	OnRoomReadyDelegate.Broadcast(LudeoResult::Success, InSessionHandle, InRoomHandle);
 }
 
-ULudeoSessionActivateSessionAsyncNode* ULudeoSessionActivateSessionAsyncNode::ActivateLudeoSession
+ULudeoSessionActivateSessionAsyncNode* ULudeoSessionActivateSessionAsyncNode::ActivateSession
 (
 	UObject* WorldContextObject,
 	const FLudeoSessionHandle& InSessionHandle,
@@ -487,7 +528,76 @@ void ULudeoSessionActivateSessionAsyncNode::OnResultReady
 	SetReadyToDestroy();
 }
 
-ULudeoSessionOpenRoomAsyncNode* ULudeoSessionOpenRoomAsyncNode::LudeoSessionOpenRoom
+/**/
+ULudeoSessionGetLudeoAsyncNode* ULudeoSessionGetLudeoAsyncNode::GetLudeo
+(
+	UObject* WorldContextObject,
+	const FLudeoSessionHandle& InSessionHandle,
+	const FLudeoSessionGetLudeoParameters& InParameters
+)
+{
+	ULudeoSessionGetLudeoAsyncNode* AsyncNode = NewObject<ULudeoSessionGetLudeoAsyncNode>(WorldContextObject);
+	AsyncNode->SessionHandle = InSessionHandle;
+	AsyncNode->Parameters = InParameters;
+
+	return AsyncNode;
+}
+
+void ULudeoSessionGetLudeoAsyncNode::Activate()
+{
+	UKismetSystemLibrary::PrintString(this, TEXT("[Ludeo Session] Getting ludeo..."), true, true, FLinearColor(0.0, 0.66, 1.0), 5.0f);
+
+	Super::Activate();
+
+	if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
+	{
+		Session->GetLudeo
+		(
+			Parameters,
+			FLudeoSessionOnGetLudeoDelegate::CreateUObject(this, &ULudeoSessionGetLudeoAsyncNode::OnGetLudeo)
+		);
+	}
+	else
+	{
+		OnResultReady(LudeoResult::InvalidParameters, SessionHandle, nullptr);
+	}
+}
+
+void ULudeoSessionGetLudeoAsyncNode::OnGetLudeo(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle, const FLudeoHandle& LudeoHandle)
+{
+	OnResultReady(Result, InSessionHandle, LudeoHandle);
+}
+
+void ULudeoSessionGetLudeoAsyncNode::OnResultReady(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle, const FLudeoHandle& LudeoHandle)
+{
+	if (Result.IsSuccessful())
+	{
+		UKismetSystemLibrary::PrintString(this, TEXT("[Ludeo Session] Ludeo is retrieved successfully"), true, true, FLinearColor(0.0, 0.66, 1.0), 5.0f);
+
+		OnSuccessDelegate.Broadcast(Result, InSessionHandle, LudeoHandle);
+	}
+	else
+	{
+		UKismetSystemLibrary::PrintString
+		(
+			this,
+			*FString::Printf
+			(
+				TEXT("[Ludeo Session] Failed to get Ludeo, reason: %s"),
+				UTF8_TO_TCHAR(Result.ToString().GetData())
+			),
+			true,
+			true,
+			FLinearColor(0.0, 0.66, 1.0),
+			5.0f
+		);
+
+		OnFailDelegate.Broadcast(Result, InSessionHandle, LudeoHandle);
+	}
+}
+/**/
+
+ULudeoSessionOpenRoomAsyncNode* ULudeoSessionOpenRoomAsyncNode::OpenRoom
 (
 	UObject* WorldContextObject,
 	const FLudeoSessionHandle& InSessionHandle,
@@ -556,7 +666,7 @@ void ULudeoSessionOpenRoomAsyncNode::OnResultReady(const FLudeoResult& Result, c
 	SetReadyToDestroy();
 }
 
-ULudeoSessionCloseRoomAsyncNode* ULudeoSessionCloseRoomAsyncNode::LudeoSessionCloseRoom
+ULudeoSessionCloseRoomAsyncNode* ULudeoSessionCloseRoomAsyncNode::CloseRoom
 (
 	UObject* WorldContextObject,
 	const FLudeoSessionHandle& InSessionHandle,

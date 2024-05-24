@@ -30,7 +30,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoPlayerBeginGameplayAsyncNode* LudeoPlayerBeginGameplay
+	static ULudeoPlayerBeginGameplayAsyncNode* BeginGameplay
 	(
 		UObject* WorldContextObject,
 		const FLudeoPlayerHandle& InPlayerHandle,
@@ -73,7 +73,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoPlayerEndGameplayAsyncNode* LudeoPlayerEndGameplay
+	static ULudeoPlayerEndGameplayAsyncNode* EndGameplay
 	(
 		UObject* WorldContextObject,
 		const FLudeoPlayerHandle& InPlayerHandle,

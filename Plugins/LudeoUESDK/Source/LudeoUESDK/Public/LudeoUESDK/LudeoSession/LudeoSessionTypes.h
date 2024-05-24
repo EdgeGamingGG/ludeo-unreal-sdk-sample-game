@@ -56,6 +56,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
 	const FLudeoRoomHandle&, RoomHandle
 );
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
+(
+	FLudeoSessionOnGetLudeoDynamicMulticastDelegate,
+	const FLudeoResult&, Result,
+	const FLudeoSessionHandle&, SessionHandle,
+	const FLudeoHandle&, LudeoHandle
+);
+
 DECLARE_DELEGATE_ThreeParams
 (
 	FLudeoSessionOnGetLudeoDelegate,
@@ -266,7 +274,7 @@ private:
 	void* NativeWindowHandle;
 };
 
-USTRUCT(BlueprintType, meta = (DisplayName = "Activate Ludeo Session Parameters"))
+USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Activate Session Parameters"))
 struct FLudeoSessionActivateSessionParameters
 {
 	GENERATED_BODY()
@@ -298,7 +306,16 @@ struct FLudeoSessionActivateSessionParameters
 	FLudeoGameWindowHandle GameWindowHandle;
 };
 
-USTRUCT(BlueprintType, meta = (DisplayName = "Open Room Parameters"))
+USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Get Ludeo Parameters"))
+struct FLudeoSessionGetLudeoParameters
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FString LudeoID;
+};
+
+USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Open Room Parameters"))
 struct FLudeoSessionOpenRoomParameters
 {
 	GENERATED_BODY()
@@ -310,7 +327,7 @@ struct FLudeoSessionOpenRoomParameters
 	FString LudeoID;
 };
 
-USTRUCT(BlueprintType, meta = (DisplayName = "Close Room Parameters"))
+USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Close Room Parameters"))
 struct FLudeoSessionCloseRoomParameters
 {
 	GENERATED_BODY()
@@ -319,7 +336,7 @@ struct FLudeoSessionCloseRoomParameters
 	FLudeoRoomHandle RoomHandle;
 };
 
-USTRUCT(BlueprintType, meta = (DisplayName = "Open Gallery Parameters"))
+USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Open Gallery Parameters"))
 struct FLudeoSessionOpenGalleryParameters
 {
 	GENERATED_BODY()

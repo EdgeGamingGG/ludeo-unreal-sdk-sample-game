@@ -52,7 +52,7 @@ public:
 
 	void GetLudeo
 	(
-		const FString& LudeoID,
+		const FLudeoSessionGetLudeoParameters& GetLudeoParameters,
 		const FLudeoSessionOnGetLudeoDelegate& OnGetLudeoDelegate = {}
 	) const;
 

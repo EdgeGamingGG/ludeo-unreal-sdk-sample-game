@@ -66,26 +66,26 @@ FLudeo* FLudeoSession::GetLudeoByLudeoHandle(const FLudeoHandle& LudeoHandle) co
 	return nullptr;
 }
 
-void FLudeoSession::GetLudeo(const FString& LudeoID, const FLudeoSessionOnGetLudeoDelegate& OnGetLudeoDelegate) const
+void FLudeoSession::GetLudeo(const FLudeoSessionGetLudeoParameters& GetLudeoParameters, const FLudeoSessionOnGetLudeoDelegate& OnGetLudeoDelegate) const
 {
 	const FTCHARToUTF8 LudeoIDStringConverter
 	(
-		LudeoID.GetCharArray().GetData(),
-		LudeoID.GetCharArray().Num()
+		GetLudeoParameters.LudeoID.GetCharArray().GetData(),
+		GetLudeoParameters.LudeoID.GetCharArray().Num()
 	);
 
-	LudeoSessionGetLudeoParams GetLudeoParameters = Ludeo::create<LudeoSessionGetLudeoParams>();
-	GetLudeoParameters.ludeoId = LudeoIDStringConverter.Get();
+	LudeoSessionGetLudeoParams InternalGetLudeoParams = Ludeo::create<LudeoSessionGetLudeoParams>();
+	InternalGetLudeoParams.ludeoId = LudeoIDStringConverter.Get();
 
 	ludeo_Session_GetLudeo
 	(
 		SessionHandle,
-		&GetLudeoParameters,
+		&InternalGetLudeoParams,
 		FLudeoCallbackManager::GetInstance().CreateCallback
 		(
 			[
 				SessionHandle = SessionHandle,
-				LudeoID,
+				LudeoID = GetLudeoParameters.LudeoID,
 				OnGetLudeoDelegate
 			]
 			(const LudeoSessionGetLudeoCallbackParams& GetLudeoCallbackParams)

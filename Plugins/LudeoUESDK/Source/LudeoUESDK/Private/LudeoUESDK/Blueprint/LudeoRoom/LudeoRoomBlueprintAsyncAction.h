@@ -30,7 +30,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoRoomAddPlayerAsyncNode* LudeoRoomAddPlayer
+	static ULudeoRoomAddPlayerAsyncNode* AddPlayer
 	(
 		UObject* WorldContextObject,
 		const FLudeoRoomHandle& InRoomHandle,
@@ -73,7 +73,7 @@ public:
 			HidePin = "WorldContextObject"
 		)
 	)
-	static ULudeoRoomRemovePlayerAsyncNode* LudeoRoomRemovePlayer
+	static ULudeoRoomRemovePlayerAsyncNode* RemovePlayer
 	(
 		UObject* WorldContextObject,
 		const FLudeoRoomHandle& InRoomHandle,
