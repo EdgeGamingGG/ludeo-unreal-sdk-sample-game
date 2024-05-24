@@ -88,7 +88,7 @@ FLudeoResult FLudeoRoomWriter::SendAction(const char* PlayerID, const char* Acti
 {
 	LudeoDataWriterSendActionParams InternalSendActionParams = Ludeo::create<LudeoDataWriterSendActionParams>();
 	InternalSendActionParams.playerId = PlayerID;
-	InternalSendActionParams.action = LUDEO_FNAME_TO_UTF8(ActionName);
+	InternalSendActionParams.action = ActionName;
 
 	return ludeo_DataWriter_SendAction(RoomWriterHandle, &InternalSendActionParams);
 }
