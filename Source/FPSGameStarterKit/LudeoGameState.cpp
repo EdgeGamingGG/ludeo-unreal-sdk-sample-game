@@ -665,7 +665,7 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 
 				// Read PlayerId with either string due to the nature of FName being case-insensitive
 				int32 PlayerID;
-				const bool bHasRead = (ReadableObject.ReadData(TEXT("PlayerId"), PlayerID) || ReadableObject.ReadData(TEXT("PlayerID"), PlayerID));
+				const bool bHasRead = (ReadableObject.ReadData("PlayerId", PlayerID) || ReadableObject.ReadData("PlayerID", PlayerID));
 				check(bHasRead);
 
 				if (Ludeo.GetCreatorPlayerID() == FString::FromInt(PlayerID))
@@ -705,7 +705,7 @@ void ALudeoGameState::LoadLudeo(const FLudeo& Ludeo)
 				{
 					const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
 
-					const bool bHasRead = ReadableObject.ReadData(TEXT("PlayerState"), PlayerStateObjectHandle);
+					const bool bHasRead = ReadableObject.ReadData("PlayerState", PlayerStateObjectHandle);
 					check(bHasRead && PlayerStateObjectHandle.IsValid());
 				}
 

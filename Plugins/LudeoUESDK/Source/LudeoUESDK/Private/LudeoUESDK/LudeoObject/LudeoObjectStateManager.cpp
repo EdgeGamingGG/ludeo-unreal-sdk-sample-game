@@ -5,8 +5,9 @@
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 
-#include "LudeoUESDK/LudeoScopedGuard.h"
 #include "LudeoUESDK/LudeoRoom/LudeoRoom.h"
+#include "LudeoUESDK/LudeoScopedGuard.h"
+#include "LudeoUESDK/LudeoUtility.h"
 
 const FLudeoWritableObject* FLudeoObjectStateManager::CreateWritableObject
 (
@@ -141,7 +142,7 @@ bool FLudeoObjectStateManager::UpdateRestoreWorldObjectMap
 		{
 			FLudeoObjectHandle LudeoObjectHandle;
 			const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
-			const bool bHasReadSuccessfully = ReadableObject.ReadData(TEXT("OuterPrivate"), LudeoObjectHandle);
+			const bool bHasReadSuccessfully = ReadableObject.ReadData("OuterPrivate", LudeoObjectHandle);
 			check(bHasReadSuccessfully);
 
 			check(LudeoObjectHandle != LUDEO_INVALID_OBJECTID);
@@ -348,7 +349,7 @@ bool FLudeoObjectStateManager::UpdateRestoreWorldObjectMap
 
 										FLudeoObjectHandle LudeoObjectHandle;
 
-										if (OuterActorReadableObject.ReadData(*ObjectProperty->GetName(), LudeoObjectHandle))
+										if (OuterActorReadableObject.ReadData(LUDEO_FNAME_TO_UTF8(ObjectProperty->GetFName()), LudeoObjectHandle))
 										{
 											if (LudeoObjectHandle == static_cast<FLudeoObjectHandle>(ReadableObject))
 											{
@@ -737,6 +738,8 @@ bool FLudeoObjectStateManager::SaveWorld
 
 	bool bIsAllDataWrittenSuccessfully = true;
 
+	char PlayerIDBuffer[16];
+
 	for (
 		FLudeoWritableObject::WritableObjectMapType::TConstIterator Itr = CurrentObjectMap.CreateConstIterator();
 		(bIsAllDataWrittenSuccessfully && Itr);
@@ -782,10 +785,12 @@ bool FLudeoObjectStateManager::SaveWorld
 
 		if (const APlayerState* AssociatedPlayer = GetObjectAssociatedPlayerState(Object))
 		{
+			FCStringAnsi::Snprintf(PlayerIDBuffer, sizeof(PlayerIDBuffer), "%d", AssociatedPlayer->GetPlayerId());
+
 			const FScopedWritableObjectBindPlayerGuard<FLudeoWritableObject> BindPlayerGuard
 			(
 				WritableObject,
-				*FString::FromInt(AssociatedPlayer->GetPlayerId())
+				PlayerIDBuffer
 			);
 
 			bIsAllDataWrittenSuccessfully = WritableObject.WriteData(CurrentObjectMap, PropertyFilter);
@@ -804,7 +809,7 @@ bool FLudeoObjectStateManager::SaveWorld
 			{
 				bIsAllDataWrittenSuccessfully = WritableObject.WriteData
 				(
-					TEXT("OuterPrivate"),
+					"OuterPrivate",
 					static_cast<FLudeoObjectHandle>(CurrentObjectMap.FindChecked(OuterObject))
 				);
 			}

@@ -28,70 +28,72 @@ public:
 	bool LeaveObject() const;
 
 	/* Pushes the struct associated with the AttributeName to the DataWriter context stack */
-	bool EnterComponent(const TCHAR* AttributeName) const;
+	bool EnterComponent(const char* AttributeName) const;
 
 	/* Pop the struct from the DataWriter context stack */
 	bool LeaveComponent() const;
 
 	/* Bind the current object to a player */
-	bool BindPlayer(const TCHAR* PlayerID) const;
+	bool BindPlayer(const char* PlayerID) const;
 
 	/* Unbind the object to a player */
 	bool UnbindPlayer() const;
 
+public:
 	bool WriteData
 	(
 		const WritableObjectMapType& ObjectMap,
 		const FLudeoObjectPropertyFilter& PropertyFilter = FLudeoObjectPropertyFilter()
 	) const;
 
-	bool WriteData(const TCHAR* AttributeName, const int8& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const int16& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const int32& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const int64& Data) const;
-
-	bool WriteData(const TCHAR* AttributeName, const uint8& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const uint16& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const uint32& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const uint64& Data) const;
-
-	bool WriteData(const TCHAR* AttributeName, const bool& Data) const;
-
-	bool WriteData(const TCHAR* AttributeName, const float& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const double& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const FVector2D& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const FVector& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const FVector4& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const FRotator& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const FQuat& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const FTransform& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const TCHAR* Data) const;
-	bool WriteData(const TCHAR* AttributeName, const FString& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const FName& Data) const;
-	bool WriteData(const TCHAR* AttributeName, const FText& Data) const;
-	bool WriteData(const TCHAR* AttributeName, UClass* Data) const;
-
-	bool WriteData(const TCHAR* AttributeName, const FLudeoObjectHandle& LudeoObjectHandle) const;
-	bool WriteData(const TCHAR* AttributeName, const UObject* Data, const WritableObjectMapType& ObjectMap) const;
-	bool WriteData(const TCHAR* AttributeName, const FWeakObjectPtr& Data, const WritableObjectMapType& ObjectMap) const;
-
 public:
+	bool WriteData(const char* AttributeName, const int8& Data) const;
+	bool WriteData(const char* AttributeName, const int16& Data) const;
+	bool WriteData(const char* AttributeName, const int32& Data) const;
+	bool WriteData(const char* AttributeName, const int64& Data) const;
+
+	bool WriteData(const char* AttributeName, const uint8& Data) const;
+	bool WriteData(const char* AttributeName, const uint16& Data) const;
+	bool WriteData(const char* AttributeName, const uint32& Data) const;
+	bool WriteData(const char* AttributeName, const uint64& Data) const;
+
+	bool WriteData(const char* AttributeName, const bool& Data) const;
+
+	bool WriteData(const char* AttributeName, const float& Data) const;
+	bool WriteData(const char* AttributeName, const double& Data) const;
+	bool WriteData(const char* AttributeName, const FVector2D& Data) const;
+	bool WriteData(const char* AttributeName, const FVector& Data) const;
+	bool WriteData(const char* AttributeName, const FVector4& Data) const;
+	bool WriteData(const char* AttributeName, const FRotator& Data) const;
+	bool WriteData(const char* AttributeName, const FQuat& Data) const;
+	bool WriteData(const char* AttributeName, const FTransform& Data) const;
+	bool WriteData(const char* AttributeName, const char* Data) const;
+	bool WriteData(const char* AttributeName, const TCHAR* Data) const;
+	bool WriteData(const char* AttributeName, const FString& Data) const;
+	bool WriteData(const char* AttributeName, const FName& Data) const;
+	bool WriteData(const char* AttributeName, const FText& Data) const;
+	bool WriteData(const char* AttributeName, UClass* Data) const;
+
+	bool WriteData(const char* AttributeName, const FLudeoObjectHandle& Data) const;
+	bool WriteData(const char* AttributeName, const UObject* Data, const WritableObjectMapType& ObjectMap) const;
+	bool WriteData(const char* AttributeName, const FWeakObjectPtr& Data, const WritableObjectMapType& ObjectMap) const;
+
+	bool WriteData
+	(
+		const char* AttributeName,
+		const void* PropertyContainer,
+		const FProperty* Property,
+		const WritableObjectMapType& ObjectMap
+	) const;
+
 	// Struct
 	bool WriteData
 	(
-		const TCHAR* AttributeName,
+		const char* AttributeName,
 		const UStruct* StructureType,
 		const void* Structure,
 		const WritableObjectMapType& ObjectMap,
 		const FLudeoObjectPropertyFilter& PropertyFilter = FLudeoObjectPropertyFilter()
-	) const;
-
-	bool WriteData
-	(
-		const TCHAR* AttributeName,
-		const void* PropertyContainer,
-		const FProperty* Property,
-		const WritableObjectMapType& ObjectMap
 	) const;
 
 private:

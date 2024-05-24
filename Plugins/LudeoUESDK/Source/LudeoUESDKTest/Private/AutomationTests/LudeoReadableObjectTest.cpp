@@ -309,27 +309,27 @@ bool FLudeoReadableObjectReadDataTest::RunTest(const FString& Parameters)
 
 		const FLudeoReadableObject ReadableObject(0xBadBeef, reinterpret_cast<LudeoHDataReader>(0xBadBeef));
 
-		TestTrue(TEXT("Get Int8 Data"),					ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<int8&>(DataBuffer[0])));
-		TestTrue(TEXT("Get Int16 Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<int16&>(DataBuffer[0])));
-		TestTrue(TEXT("Get int32 Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<int32&>(DataBuffer[0])));
-		TestTrue(TEXT("Get Int64 Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<int64&>(DataBuffer[0])));
-		TestTrue(TEXT("Get UInt8 Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<uint8&>(DataBuffer[0])));
-		TestTrue(TEXT("Get UInt16 Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<uint16&>(DataBuffer[0])));
-		TestTrue(TEXT("Get Uint32 Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<uint32&>(DataBuffer[0])));
-		TestTrue(TEXT("Get UInt64 Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<uint64&>(DataBuffer[0])));
-		TestTrue(TEXT("Get bool Data"),					ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<bool&>(DataBuffer[0])));
-		TestTrue(TEXT("Get Float Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<float&>(DataBuffer[0])));
-		TestTrue(TEXT("Get Double Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<double&>(DataBuffer[0])));
-		TestTrue(TEXT("Get Vector2D Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), Vector2D));
-		TestTrue(TEXT("Get Vector Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), Vector));
-		TestTrue(TEXT("Get Vector4 Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), Vector4));
-		TestTrue(TEXT("Get Rotator Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), Rotator));
-		TestTrue(TEXT("Get Quaternion Data"),			ReadableObject.ReadData(TEXT("Bad Beef"), Quaternion));
-		TestTrue(TEXT("Get Transform Data"),			ReadableObject.ReadData(TEXT("Bad Beef"), Transform));
-		TestTrue(TEXT("Get String Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), String));
-		TestTrue(TEXT("Get Name Data"),					ReadableObject.ReadData(TEXT("Bad Beef"), Name));
-		TestTrue(TEXT("Get Class Data"),				ReadableObject.ReadData(TEXT("Bad Beef"), ObjectClass));
-		TestTrue(TEXT("Get Ludeo Object Handle Data"),	ReadableObject.ReadData(TEXT("Bad Beef"), reinterpret_cast<FLudeoObjectHandle&>(DataBuffer[0])));
+		TestTrue(TEXT("Get Int8 Data"),					ReadableObject.ReadData("Bad Beef", reinterpret_cast<int8&>(DataBuffer[0])));
+		TestTrue(TEXT("Get Int16 Data"),				ReadableObject.ReadData("Bad Beef", reinterpret_cast<int16&>(DataBuffer[0])));
+		TestTrue(TEXT("Get int32 Data"),				ReadableObject.ReadData("Bad Beef", reinterpret_cast<int32&>(DataBuffer[0])));
+		TestTrue(TEXT("Get Int64 Data"),				ReadableObject.ReadData("Bad Beef", reinterpret_cast<int64&>(DataBuffer[0])));
+		TestTrue(TEXT("Get UInt8 Data"),				ReadableObject.ReadData("Bad Beef", reinterpret_cast<uint8&>(DataBuffer[0])));
+		TestTrue(TEXT("Get UInt16 Data"),				ReadableObject.ReadData("Bad Beef", reinterpret_cast<uint16&>(DataBuffer[0])));
+		TestTrue(TEXT("Get Uint32 Data"),				ReadableObject.ReadData("Bad Beef", reinterpret_cast<uint32&>(DataBuffer[0])));
+		TestTrue(TEXT("Get UInt64 Data"),				ReadableObject.ReadData("Bad Beef", reinterpret_cast<uint64&>(DataBuffer[0])));
+		TestTrue(TEXT("Get bool Data"),					ReadableObject.ReadData("Bad Beef", reinterpret_cast<bool&>(DataBuffer[0])));
+		TestTrue(TEXT("Get Float Data"),				ReadableObject.ReadData("Bad Beef", reinterpret_cast<float&>(DataBuffer[0])));
+		TestTrue(TEXT("Get Double Data"),				ReadableObject.ReadData("Bad Beef", reinterpret_cast<double&>(DataBuffer[0])));
+		TestTrue(TEXT("Get Vector2D Data"),				ReadableObject.ReadData("Bad Beef", Vector2D));
+		TestTrue(TEXT("Get Vector Data"),				ReadableObject.ReadData("Bad Beef", Vector));
+		TestTrue(TEXT("Get Vector4 Data"),				ReadableObject.ReadData("Bad Beef", Vector4));
+		TestTrue(TEXT("Get Rotator Data"),				ReadableObject.ReadData("Bad Beef", Rotator));
+		TestTrue(TEXT("Get Quaternion Data"),			ReadableObject.ReadData("Bad Beef", Quaternion));
+		TestTrue(TEXT("Get Transform Data"),			ReadableObject.ReadData("Bad Beef", Transform));
+		TestTrue(TEXT("Get String Data"),				ReadableObject.ReadData("Bad Beef", String));
+		TestTrue(TEXT("Get Name Data"),					ReadableObject.ReadData("Bad Beef", Name));
+		TestTrue(TEXT("Get Class Data"),				ReadableObject.ReadData("Bad Beef", ObjectClass));
+		TestTrue(TEXT("Get Ludeo Object Handle Data"),	ReadableObject.ReadData("Bad Beef", reinterpret_cast<FLudeoObjectHandle&>(DataBuffer[0])));
 	}
 
 	return (DetourFunction.IsDetoured() && !HasAnyErrors());

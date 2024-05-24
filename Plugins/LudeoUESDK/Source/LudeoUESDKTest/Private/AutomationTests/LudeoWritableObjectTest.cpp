@@ -190,7 +190,7 @@ bool FLudeoWritableObjectBindPlayerTest::RunTest(const FString& Parameters)
 			reinterpret_cast<LudeoHDataWriter>(0xBadBeef)
 		);
 		
-		TestTrue(TEXT("Bind Player"), WritableObject.BindPlayer(TEXT("Bad Beef")));
+		TestTrue(TEXT("Bind Player"), WritableObject.BindPlayer("Bad Beef"));
 	}
 
 	return (DetourFunction.IsDetoured() && !HasAnyErrors());
@@ -387,29 +387,29 @@ bool FLudeoWritableObjectWriteDataTest::RunTest(const FString& Parameters)
 			reinterpret_cast<LudeoHDataWriter>(0xBadBeef)
 		);
 
-		TestTrue(TEXT("Set Int8 Data"),					WritableObject.WriteData(TEXT("Bad Beef"), static_cast<int8>(Data[0])));
-		TestTrue(TEXT("Set Int16 Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<int16>(Data[0])));
-		TestTrue(TEXT("Set int32 Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<int32>(Data[0])));
-		TestTrue(TEXT("Set Int64 Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<int64>(Data[0])));
-		TestTrue(TEXT("Set UInt8 Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<uint8>(Data[0])));
-		TestTrue(TEXT("Set UInt16 Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<uint16>(Data[0])));
-		TestTrue(TEXT("Set Uint32 Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<uint32>(Data[0])));
-		TestTrue(TEXT("Set UInt64 Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<uint64>(Data[0])));
-		TestTrue(TEXT("Set bool Data"),					WritableObject.WriteData(TEXT("Bad Beef"), static_cast<bool>(Data[0])));
-		TestTrue(TEXT("Set Float Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<float>(Data[0])));
-		TestTrue(TEXT("Set Double Data"),				WritableObject.WriteData(TEXT("Bad Beef"), static_cast<double>(Data[0])));
-		TestTrue(TEXT("Set Vector2D Data"),				WritableObject.WriteData(TEXT("Bad Beef"), Vector2D));
-		TestTrue(TEXT("Set Vector Data"),				WritableObject.WriteData(TEXT("Bad Beef"), Vector));
-		TestTrue(TEXT("Set Vector4 Data"),				WritableObject.WriteData(TEXT("Bad Beef"), Vector4));
-		TestTrue(TEXT("Set Rotator Data"),				WritableObject.WriteData(TEXT("Bad Beef"), Rotator));
-		TestTrue(TEXT("Set Quaternion Data"),			WritableObject.WriteData(TEXT("Bad Beef"), Quaternion));
-		TestTrue(TEXT("Set Transform Data"),			WritableObject.WriteData(TEXT("Bad Beef"), Transform));
-		TestTrue(TEXT("Set String Data"),				WritableObject.WriteData(TEXT("Bad Beef"), TEXT("Dead Beef")));
-		TestTrue(TEXT("Set String Data"),				WritableObject.WriteData(TEXT("Bad Beef"), *String));
-		TestTrue(TEXT("Set String Data"),				WritableObject.WriteData(TEXT("Bad Beef"), String));
-		TestTrue(TEXT("Set Name Data"),					WritableObject.WriteData(TEXT("Bad Beef"), Name));
-		TestTrue(TEXT("Set Class Data"),				WritableObject.WriteData(TEXT("Bad Beef"), ObjectClass));
-		TestTrue(TEXT("Set Ludeo Object Handle Data"),	WritableObject.WriteData(TEXT("Bad Beef"), reinterpret_cast<FLudeoObjectHandle&>(Data[0])));
+		TestTrue(TEXT("Set Int8 Data"),					WritableObject.WriteData("Bad Beef", static_cast<int8>(Data[0])));
+		TestTrue(TEXT("Set Int16 Data"),				WritableObject.WriteData("Bad Beef", static_cast<int16>(Data[0])));
+		TestTrue(TEXT("Set int32 Data"),				WritableObject.WriteData("Bad Beef", static_cast<int32>(Data[0])));
+		TestTrue(TEXT("Set Int64 Data"),				WritableObject.WriteData("Bad Beef", static_cast<int64>(Data[0])));
+		TestTrue(TEXT("Set UInt8 Data"),				WritableObject.WriteData("Bad Beef", static_cast<uint8>(Data[0])));
+		TestTrue(TEXT("Set UInt16 Data"),				WritableObject.WriteData("Bad Beef", static_cast<uint16>(Data[0])));
+		TestTrue(TEXT("Set Uint32 Data"),				WritableObject.WriteData("Bad Beef", static_cast<uint32>(Data[0])));
+		TestTrue(TEXT("Set UInt64 Data"),				WritableObject.WriteData("Bad Beef", static_cast<uint64>(Data[0])));
+		TestTrue(TEXT("Set bool Data"),					WritableObject.WriteData("Bad Beef", static_cast<bool>(Data[0])));
+		TestTrue(TEXT("Set Float Data"),				WritableObject.WriteData("Bad Beef", static_cast<float>(Data[0])));
+		TestTrue(TEXT("Set Double Data"),				WritableObject.WriteData("Bad Beef", static_cast<double>(Data[0])));
+		TestTrue(TEXT("Set Vector2D Data"),				WritableObject.WriteData("Bad Beef", Vector2D));
+		TestTrue(TEXT("Set Vector Data"),				WritableObject.WriteData("Bad Beef", Vector));
+		TestTrue(TEXT("Set Vector4 Data"),				WritableObject.WriteData("Bad Beef", Vector4));
+		TestTrue(TEXT("Set Rotator Data"),				WritableObject.WriteData("Bad Beef", Rotator));
+		TestTrue(TEXT("Set Quaternion Data"),			WritableObject.WriteData("Bad Beef", Quaternion));
+		TestTrue(TEXT("Set Transform Data"),			WritableObject.WriteData("Bad Beef", Transform));
+		TestTrue(TEXT("Set String Data"),				WritableObject.WriteData("Bad Beef", TEXT("Dead Beef")));
+		TestTrue(TEXT("Set String Data"),				WritableObject.WriteData("Bad Beef", *String));
+		TestTrue(TEXT("Set String Data"),				WritableObject.WriteData("Bad Beef", String));
+		TestTrue(TEXT("Set Name Data"),					WritableObject.WriteData("Bad Beef", Name));
+		TestTrue(TEXT("Set Class Data"),				WritableObject.WriteData("Bad Beef", ObjectClass));
+		TestTrue(TEXT("Set Ludeo Object Handle Data"),	WritableObject.WriteData("Bad Beef", reinterpret_cast<FLudeoObjectHandle&>(Data[0])));
 	}
 
 	return (DetourFunction.IsDetoured() && !HasAnyErrors());

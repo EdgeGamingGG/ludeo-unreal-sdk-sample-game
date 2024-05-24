@@ -6,6 +6,7 @@
 #include <Ludeo/Utils.h>
 
 #include "LudeoUESDK/LudeoScopedGuard.h"
+#include "LudeoUESDK/LudeoUtility.h"
 
 // Suppress unreal wrong deprecated warning
 #undef UInt16Property
@@ -32,7 +33,7 @@ FLudeoResult ConditionalRoomWriterSetCurrent(const FLudeoRoomWriterHandle& RoomW
 }
 
 template<typename DataType>
-bool GenericWriteData(const FLudeoRoomWriterHandle& RoomWriterHandle, const TCHAR* AttributeName, const DataType& Data)
+bool GenericWriteData(const FLudeoRoomWriterHandle& RoomWriterHandle, const char* AttributeName, const DataType& Data)
 {
 	check(AttributeName != nullptr);
 
@@ -40,7 +41,7 @@ bool GenericWriteData(const FLudeoRoomWriterHandle& RoomWriterHandle, const TCHA
 
 	if (ConditionalSetCurrentResult.IsSuccessful())
 	{
-		return (ludeo_DataWriter_Set(TCHAR_TO_UTF8(AttributeName), Data) == LUDEO_TRUE);
+		return (ludeo_DataWriter_Set(AttributeName, Data) == LUDEO_TRUE);
 	}
 
 	return false;
@@ -90,13 +91,13 @@ bool FLudeoWritableObject::LeaveObject() const
 	return false;
 }
 
-bool FLudeoWritableObject::EnterComponent(const TCHAR* AttributeName) const
+bool FLudeoWritableObject::EnterComponent(const char* AttributeName) const
 {
 	const FLudeoResult Result = ConditionalRoomWriterSetCurrent(RoomWriterHandle);
 
 	if (Result.IsSuccessful())
 	{
-		return (ludeo_DataWriter_EnterComponent(TCHAR_TO_UTF8(AttributeName)) == LUDEO_TRUE);
+		return (ludeo_DataWriter_EnterComponent(AttributeName) == LUDEO_TRUE);
 	}
 
 	return false;
@@ -114,13 +115,13 @@ bool FLudeoWritableObject::LeaveComponent() const
 	return false;
 }
 
-bool FLudeoWritableObject::BindPlayer(const TCHAR* PlayerID) const
+bool FLudeoWritableObject::BindPlayer(const char* PlayerID) const
 {
 	const FLudeoResult Result = ConditionalRoomWriterSetCurrent(RoomWriterHandle);
 
 	if (Result.IsSuccessful())
 	{
-		return (ludeo_DataWriter_SetPlayerBinding(TCHAR_TO_UTF8(PlayerID)) == LUDEO_TRUE);
+		return (ludeo_DataWriter_SetPlayerBinding(PlayerID) == LUDEO_TRUE);
 	}
 
 	return false;
@@ -152,109 +153,181 @@ bool FLudeoWritableObject::WriteData
 	return false;
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const int8& Data) const
+bool FLudeoWritableObject::InternalWriteData
+(
+	const UStruct* StructureType,
+	const void* StructureContainer,
+	const WritableObjectMapType& ObjectMap,
+	const FLudeoObjectPropertyFilter& PropertyFilter
+) const
+{
+	check(StructureType != nullptr);
+	check(StructureContainer != nullptr);
+
+	bool bIsAllDataWrittenSuccessfully = true;
+
+	for (TFieldIterator<FProperty> PropertyIterator(StructureType); bIsAllDataWrittenSuccessfully && PropertyIterator; ++PropertyIterator)
+	{
+		const FProperty* Property = *PropertyIterator;
+		check(Property != nullptr);
+
+		const bool bShouldWriteData = [&]()
+		{
+			if (PropertyFilter.Match(*Property))
+			{
+				bool bIsIdentical = true;
+
+				if (const UScriptStruct* ScriptStruct = Cast<UScriptStruct>(StructureType))
+				{
+					char DefaultObjectBuffer[4096];
+
+					check(ScriptStruct->GetStructureSize() <= sizeof(DefaultObjectBuffer));
+
+					ScriptStruct->InitializeStruct(DefaultObjectBuffer);
+
+					bIsIdentical = Property->Identical_InContainer(StructureContainer, DefaultObjectBuffer);
+
+					ScriptStruct->DestroyStruct(DefaultObjectBuffer);
+				}
+				else if (const UClass* UnrealClass = Cast<UClass>(StructureType))
+				{
+					bIsIdentical = Property->Identical_InContainer(StructureContainer, UnrealClass->GetDefaultObject());
+				}
+
+				return !bIsIdentical;
+			}
+
+			return false;
+		}();
+
+		if (bShouldWriteData)
+		{
+			bIsAllDataWrittenSuccessfully = WriteData
+			(
+				LUDEO_FNAME_TO_UTF8(Property->GetFName()),
+				StructureContainer,
+				Property,
+				ObjectMap
+			);
+		}
+	}
+
+	return bIsAllDataWrittenSuccessfully;
+}
+
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const int8& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const int16& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const int16& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const int32& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const int32& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const int64& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const int64& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const uint8& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const uint8& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const uint16& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const uint16& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const uint32& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const uint32& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const uint64& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const uint64& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const bool& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const bool& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const float& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const float& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const double& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const double& Data) const
 {
 	return GenericWriteData(RoomWriterHandle, AttributeName, Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FVector2D& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FVector2D& Data) const
 {
 	return WriteData(AttributeName, FLudeoVector2D::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FVector& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FVector& Data) const
 {
 	return WriteData(AttributeName, FLudeoVector::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FVector4& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FVector4& Data) const
 {
 	return WriteData(AttributeName, FLudeoVector4::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FRotator& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FRotator& Data) const
 {
 	return WriteData(AttributeName, FLudeoRotator::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FQuat& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FQuat& Data) const
 {
 	return WriteData(AttributeName, FLudeoQuaterion::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FTransform& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FTransform& Data) const
 {
 	return WriteData(AttributeName, FLudeoTransform::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const TCHAR* Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const char* Data) const
+{
+	return GenericWriteData(RoomWriterHandle, AttributeName, "");
+}
+
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const TCHAR* Data) const
 {
 	const FTCHARToUTF8 StringConverter(Data);
 
-	return GenericWriteData(RoomWriterHandle, AttributeName, StringConverter.Get());
+	if(StringConverter.Length() > 0)
+	{
+		return WriteData(AttributeName, StringConverter.Get());
+	}
+
+	return WriteData(AttributeName, "");
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FString& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FString& Data) const
 {
 	return WriteData(AttributeName, *Data);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FName& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FName& Data) const
 {
-	return WriteData(AttributeName, *Data.ToString());
+	return WriteData(AttributeName, LUDEO_FNAME_TO_UTF8(Data));
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FText& Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FText& Data) const
 {
 	FLudeoText LudeoText;
 
@@ -297,7 +370,7 @@ bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FText& Da
 	return WriteData(AttributeName, FLudeoText::StaticStruct(), &LudeoText, {});
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, UClass* Data) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, UClass* Data) const
 {
 	if (Data != nullptr)
 	{
@@ -313,12 +386,12 @@ bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, UClass* Data) c
 	return WriteData(AttributeName, FString());
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FLudeoObjectHandle& LudeoObjectHandle) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FLudeoObjectHandle& Data) const
 {
-	return WriteData(AttributeName, static_cast<LudeoObjectId>(LudeoObjectHandle));
+	return WriteData(AttributeName, static_cast<LudeoObjectId>(Data));
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const UObject* Data, const WritableObjectMapType& ObjectMap) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const UObject* Data, const WritableObjectMapType& ObjectMap) const
 {
 	const FLudeoObjectHandle LudeoObjectHandle = [&]()
 	{
@@ -340,14 +413,33 @@ bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const UObject* 
 	return WriteData(AttributeName, LudeoObjectHandle);
 }
 
-bool FLudeoWritableObject::WriteData(const TCHAR* AttributeName, const FWeakObjectPtr& Data, const WritableObjectMapType& ObjectMap) const
+bool FLudeoWritableObject::WriteData(const char* AttributeName, const FWeakObjectPtr& Data, const WritableObjectMapType& ObjectMap) const
 {
 	return WriteData(AttributeName, Data.Get(), ObjectMap);
 }
 
 bool FLudeoWritableObject::WriteData
 (
-	const TCHAR* AttributeName,
+	const char* AttributeName,
+	const UStruct* StructureType,
+	const void* Structure,
+	const WritableObjectMapType& ObjectMap,
+	const FLudeoObjectPropertyFilter& PropertyFilter
+) const
+{
+	const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject, false> EnterComponentGuard(*this, AttributeName);
+
+	if(EnterComponentGuard.HasEnteredComponent())
+	{
+		return InternalWriteData(StructureType, Structure, ObjectMap, PropertyFilter);
+	}
+
+	return false;
+}
+
+bool FLudeoWritableObject::WriteData
+(
+	const char* AttributeName,
 	const void* PropertyContainer,
 	const FProperty* Property,
 	const WritableObjectMapType& ObjectMap
@@ -497,13 +589,17 @@ bool FLudeoWritableObject::WriteData
 
 			if(bIsDataWrittenSuccessfully)
 			{
-				bIsDataWrittenSuccessfully = WriteData(TEXT("ArraySize"), ScriptArrayHelper.Num());
+				bIsDataWrittenSuccessfully = WriteData("ArraySize", ScriptArrayHelper.Num());
+
+				char ArrayElementAttributeNameBuffer[16];
 
 				for (int32 i = 0; (bIsDataWrittenSuccessfully && i < ScriptArrayHelper.Num()); ++i)
 				{
+					FCStringAnsi::Snprintf(ArrayElementAttributeNameBuffer, sizeof(ArrayElementAttributeNameBuffer), "%d", i);
+
 					bIsDataWrittenSuccessfully = WriteData
 					(
-						*FString::FromInt(i),
+						ArrayElementAttributeNameBuffer,
 						ScriptArrayHelper.GetRawPtr(i),
 						ArrayProperty->Inner,
 						ObjectMap
@@ -526,16 +622,20 @@ bool FLudeoWritableObject::WriteData
 
 			if (bIsDataWrittenSuccessfully)
 			{
-				bIsDataWrittenSuccessfully = WriteData(TEXT("SetSize"), ScriptSetHelper.Num());
+				bIsDataWrittenSuccessfully = WriteData("SetSize", ScriptSetHelper.Num());
 
 				{
-					int32 ElementNumber = 0;
+					char SetElementAttributeNameBuffer[16];
+
+					int32 ElementNumber = 0;		
 
 					for (FScriptSetHelper::FIterator Itr(ScriptSetHelper);  (bIsDataWrittenSuccessfully && Itr); ++Itr)
 					{
+						FCStringAnsi::Snprintf(SetElementAttributeNameBuffer, sizeof(SetElementAttributeNameBuffer), "%d", ElementNumber);
+
 						bIsDataWrittenSuccessfully = WriteData
 						(
-							*FString::FromInt(ElementNumber),
+							SetElementAttributeNameBuffer,
 							ScriptSetHelper.GetElementPtr(*Itr),
 							ScriptSetHelper.GetElementProperty(),
 							ObjectMap
@@ -561,24 +661,29 @@ bool FLudeoWritableObject::WriteData
 
 			if (bIsDataWrittenSuccessfully)
 			{
-				bIsDataWrittenSuccessfully = WriteData(TEXT("MapSize"), ScriptMapHelper.Num());
+				bIsDataWrittenSuccessfully = WriteData("MapSize", ScriptMapHelper.Num());
 
 				{
+					char MapPairAttributeNameBuffer[32];
+
 					int32 PairNumber = 0;
 
 					for (FScriptMapHelper::FIterator Itr(ScriptMapHelper); (bIsDataWrittenSuccessfully && Itr); ++Itr)
 					{
+						FCStringAnsi::Snprintf(MapPairAttributeNameBuffer, sizeof(MapPairAttributeNameBuffer), "Key_%d", PairNumber),
 						bIsDataWrittenSuccessfully = WriteData
 						(
-							*FString::Printf(TEXT("%Key_d"), PairNumber),
+							
+							MapPairAttributeNameBuffer,
 							ScriptMapHelper.GetKeyPtr(*Itr),
 							ScriptMapHelper.GetKeyProperty(),
 							ObjectMap
 						);
 
+						FCStringAnsi::Snprintf(MapPairAttributeNameBuffer, sizeof(MapPairAttributeNameBuffer), "Value_%d", PairNumber),
 						bIsDataWrittenSuccessfully = bIsDataWrittenSuccessfully && WriteData
 						(
-							*FString::Printf(TEXT("Value_d"), PairNumber),
+							MapPairAttributeNameBuffer,
 							ScriptMapHelper.GetValuePtr(*Itr),
 							ScriptMapHelper.GetKeyProperty(),
 							ObjectMap
@@ -598,77 +703,3 @@ bool FLudeoWritableObject::WriteData
 	return bIsDataWrittenSuccessfully;
 }
 
-bool FLudeoWritableObject::WriteData
-(
-	const TCHAR* AttributeName,
-	const UStruct* StructureType,
-	const void* Structure,
-	const WritableObjectMapType& ObjectMap,
-	const FLudeoObjectPropertyFilter& PropertyFilter
-) const
-{
-	const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject, false> EnterComponentGuard(*this, AttributeName);
-
-	if(EnterComponentGuard.HasEnteredComponent())
-	{
-		return InternalWriteData(StructureType, Structure, ObjectMap, PropertyFilter);
-	}
-
-	return false;
-}
-
-bool FLudeoWritableObject::InternalWriteData
-(
-	const UStruct* StructureType,
-	const void* StructureContainer,
-	const WritableObjectMapType& ObjectMap,
-	const FLudeoObjectPropertyFilter& PropertyFilter
-) const
-{
-	check(StructureType != nullptr);
-	check(StructureContainer != nullptr);
-
-	bool bIsAllDataWrittenSuccessfully = true;
-
-	for (TFieldIterator<FProperty> PropertyIterator(StructureType); bIsAllDataWrittenSuccessfully && PropertyIterator; ++PropertyIterator)
-	{
-		const FProperty* Property = *PropertyIterator;
-		check(Property != nullptr);
-
-		const bool bShouldWriteData = [&]()
-		{
-			if (PropertyFilter.Match(*Property))
-			{
-				bool bIsIdentical = true;
-
-				if (const UScriptStruct* ScriptStruct = Cast<UScriptStruct>(StructureType))
-				{
-					char DefaultObjectBuffer[4096];
-
-					check(ScriptStruct->GetStructureSize() <= sizeof(DefaultObjectBuffer));
-
-					ScriptStruct->InitializeStruct(DefaultObjectBuffer);
-
-					bIsIdentical = Property->Identical_InContainer(StructureContainer, DefaultObjectBuffer);
-
-					ScriptStruct->DestroyStruct(DefaultObjectBuffer);
-				}
-				else if (const UClass* UnrealClass = Cast<UClass>(StructureType))
-				{
-					bIsIdentical = Property->Identical_InContainer(StructureContainer, UnrealClass->GetDefaultObject());
-				}
-
-				return !bIsIdentical;
-			}
-
-			return false;
-		}();
-
-		if (bShouldWriteData)
-		{
-			bIsAllDataWrittenSuccessfully = WriteData(*Property->GetName(), StructureContainer, Property, ObjectMap);
-		}
-	}
-
-	return bIsAllDataWrittenSuccessfully;
-}

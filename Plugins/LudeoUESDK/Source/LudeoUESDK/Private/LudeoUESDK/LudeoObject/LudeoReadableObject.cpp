@@ -5,6 +5,7 @@
 #include "LudeoUESDK/LudeoScopedGuard.h"
 #include "LudeoUESDK/LudeoLog/LudeoLogTypes.h"
 #include "LudeoUESDK/LudeoResult.h"
+#include "LudeoUESDK/LudeoUtility.h"
 
 // Suppress unreal wrong deprecated warning
 #undef UInt16Property
@@ -58,28 +59,36 @@ bool GenericReadData(const FLudeoHandle& LudeoHandle, const char* AttributeName,
 
 	if (ConditionalSetCurrentResult.IsSuccessful())
 	{
-		uint32_t BufferSize = 0;
-		const bool bHasGetSize = (ludeo_DataReader_GetSize(AttributeName, &BufferSize) == LUDEO_TRUE);
+		uint32_t StringBufferSize = 0;
+		const bool bHasGetSize = (ludeo_DataReader_GetSize(AttributeName, &StringBufferSize) == LUDEO_TRUE);
 		check(bHasGetSize);
+		check(StringBufferSize <= static_cast<uint32>(TNumericLimits<int32>::Max()));
 
-		check(BufferSize <= static_cast<uint32>(TNumericLimits<int32>::Max()));
-
-		bool bHasReadData = true;
-
-		if (BufferSize > 0)
+		if(bHasGetSize)
 		{
-			TArray<ANSICHAR> Buffer;
-			Buffer.AddUninitialized(FMath::Max(1, static_cast<int32>(BufferSize / sizeof(ANSICHAR))));
+			if (StringBufferSize > 0)
+			{
+				TArray<char> StringBuffer;
+				StringBuffer.AddUninitialized(StringBufferSize);
 
-			char* BufferData = Buffer.GetData();
+				char* StringBufferData = StringBuffer.GetData();
 
-			bHasReadData = GenericReadData(LudeoHandle, AttributeName, BufferData);
-			check(bHasReadData);
+				const bool bHasReadData = GenericReadData(LudeoHandle, AttributeName, StringBufferData);
+				check(bHasReadData);
 
-			Data = UTF8_TO_TCHAR(BufferData);
+				if(bHasReadData)
+				{
+					const FUTF8ToTCHAR StringConverter(StringBufferData, StringBufferSize);
+					Data = FString(StringConverter.Length(), StringConverter.Get());
+
+					return true;
+				}
+			}
+			else
+			{
+				return true;
+			}
 		}
-
-		return bHasReadData;
 	}
 
 	return false;
@@ -122,13 +131,13 @@ bool FLudeoReadableObject::LeaveObject() const
 	return false;
 }
 
-bool FLudeoReadableObject::EnterComponent(const TCHAR* AttributeName) const
+bool FLudeoReadableObject::EnterComponent(const char* AttributeName) const
 {
 	const FLudeoResult Result = ConditionalDataReaderSetCurrent(LudeoHandle);
 
 	if (Result.IsSuccessful())
 	{
-		return (ludeo_DataReader_EnterComponent(TCHAR_TO_UTF8(AttributeName)) == LUDEO_TRUE);
+		return (ludeo_DataReader_EnterComponent(AttributeName) == LUDEO_TRUE);
 	}
 
 	return false;
@@ -146,7 +155,7 @@ bool FLudeoReadableObject::LeaveComponent() const
 	return false;
 }
 
-bool FLudeoReadableObject::ExistAttribute(const TCHAR* AttributeName) const
+bool FLudeoReadableObject::ExistAttribute(const char* AttributeName) const
 {
 	bool bAttributeExists = false;
 
@@ -156,7 +165,7 @@ bool FLudeoReadableObject::ExistAttribute(const TCHAR* AttributeName) const
 	{
 		uint32_t DataByteSize = 0;
 
-		bAttributeExists = (ludeo_DataReader_GetSize(TCHAR_TO_UTF8(AttributeName), &DataByteSize) == LUDEO_TRUE);
+		bAttributeExists = (ludeo_DataReader_GetSize(AttributeName, &DataByteSize) == LUDEO_TRUE);
 
 		if(!bAttributeExists)
 		{
@@ -169,111 +178,111 @@ bool FLudeoReadableObject::ExistAttribute(const TCHAR* AttributeName) const
 	return bAttributeExists;
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, int8& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, int8& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, int16& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, int16& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, int32& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, int32& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, int64& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, int64& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, uint8& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, uint8& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, uint16& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, uint16& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, uint32& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, uint32& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, uint64& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, uint64& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, bool& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, bool& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, float& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, float& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, double& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, double& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FVector2D& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FVector2D& Data) const
 {
 	return ReadData(AttributeName, FLudeoVector2D::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FVector& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FVector& Data) const
 {
 	return ReadData(AttributeName, FLudeoVector::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FVector4& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FVector4& Data) const
 {
 	return ReadData(AttributeName, FLudeoVector4::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FRotator& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FRotator& Data) const
 {
 	return ReadData(AttributeName, FLudeoRotator::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FQuat& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FQuat& Data) const
 {
 	return ReadData(AttributeName, FLudeoQuaterion::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FTransform& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FTransform& Data) const
 {
 	return ReadData(AttributeName, FLudeoTransform::StaticStruct()->GetSuperStruct(), &Data, {});
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FString& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FString& Data) const
 {
-	return GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), Data);
+	return GenericReadData(LudeoHandle, AttributeName, Data);
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FName& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FName& Data) const
 {
 	FString NameString;
 
-	const bool bHasReadData = GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), NameString);
+	const bool bHasReadData = GenericReadData(LudeoHandle, AttributeName, NameString);
 
 	if (bHasReadData)
 	{
-		Data = FName(*NameString);
+		Data = FName(*NameString, NameString.Len());
 	}
 
 	return bHasReadData;
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FText& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FText& Data) const
 {
 	FLudeoText LudeoText;
 
@@ -287,7 +296,12 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FText& Data) con
 		}
 		else if(!LudeoText.Namespace.IsEmpty() && !LudeoText.Key.IsEmpty())
 		{
-			Data = FInternationalization::ForUseOnlyByLocMacroAndGraphNodeTextLiterals_CreateText(*LudeoText.Namespace, *LudeoText.Key, *LudeoText.SourceString);
+			Data = FInternationalization::ForUseOnlyByLocMacroAndGraphNodeTextLiterals_CreateText
+			(
+				*LudeoText.Namespace,
+				*LudeoText.Key,
+				*LudeoText.SourceString
+			);
 		}
 		else
 		{
@@ -298,11 +312,11 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FText& Data) con
 	return bHasReadData;
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, UClass*& Data, FString* ClassPathName) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, UClass*& Data, FString* ClassPathName) const
 {
 	FString StringData;
 
-	if (GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), StringData))
+	if (GenericReadData(LudeoHandle, AttributeName, StringData))
 	{
 		if (StringData.Len() > 0)
 		{
@@ -331,11 +345,11 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, UClass*& Data, F
 	return false;
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FLudeoObjectHandle& Data) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FLudeoObjectHandle& Data) const
 {
 	LudeoObjectId ObjectID = LUDEO_INVALID_OBJECTID;
 	
-	if (GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), ObjectID))
+	if (GenericReadData(LudeoHandle, AttributeName, ObjectID))
 	{
 		Data = FLudeoObjectHandle(ObjectID);
 		
@@ -345,11 +359,11 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FLudeoObjectHand
 	return false;
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, UObject*& Data, const ReadableObjectMapType& ObjectMap) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, UObject*& Data, const ReadableObjectMapType& ObjectMap) const
 {
 	LudeoObjectId ObjectID = LUDEO_INVALID_OBJECTID;
 
-	if (GenericReadData(LudeoHandle, TCHAR_TO_UTF8(AttributeName), ObjectID))
+	if (GenericReadData(LudeoHandle, AttributeName, ObjectID))
 	{
 		const FLudeoObjectHandle LudeoObjectHandle(ObjectID);
 
@@ -375,7 +389,7 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, UObject*& Data, 
 	return false;
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FWeakObjectPtr& Data, const ReadableObjectMapType& ObjectMap) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, FWeakObjectPtr& Data, const ReadableObjectMapType& ObjectMap) const
 {
 	UObject* Object = nullptr;
 
@@ -391,7 +405,7 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, FWeakObjectPtr& 
 
 bool FLudeoReadableObject::ReadData
 (
-	const TCHAR* AttributeName,
+	const char* AttributeName,
 	const UStruct* StructureType,
 	void* Structure,
 	const ReadableObjectMapType& ObjectMap,
@@ -412,7 +426,7 @@ bool FLudeoReadableObject::ReadData
 	return false;
 }
 
-bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* PropertyContainer, const FProperty* Property, const ReadableObjectMapType& ObjectMap) const
+bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* PropertyContainer, const FProperty* Property, const ReadableObjectMapType& ObjectMap) const
 {
 	check(PropertyContainer != nullptr);
 	check(Property != nullptr);
@@ -560,10 +574,12 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* Prop
 		if(bIsDataReadSuccessfully)
 		{
 			int32 ArraySize = 0;
-			ReadData(TEXT("ArraySize"), ArraySize);
+			ReadData("ArraySize", ArraySize);
 
 			if(ArraySize >= 0)
 			{
+				char Buffer[16];
+
 				FScriptArrayHelper ScriptArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(PropertyContainer));
 
 				ScriptArrayHelper.EmptyValues(ArraySize);
@@ -572,9 +588,11 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* Prop
 				{
 					const int32 Index = ScriptArrayHelper.AddValue();
 
+					FCStringAnsi::Snprintf(Buffer, sizeof(Buffer), "%d", Index);
+
 					bIsDataReadSuccessfully = ReadData
 					(
-						*FString::FromInt(i),
+						Buffer,
 						ScriptArrayHelper.GetRawPtr(Index),
 						ArrayProperty->Inner,
 						ObjectMap
@@ -592,10 +610,12 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* Prop
 		if (bIsDataReadSuccessfully)
 		{
 			int32 SetSize = 0;		
-			ReadData(TEXT("SetSize"), SetSize);
+			ReadData("SetSize", SetSize);
 
 			if(SetSize >= 0)
 			{
+				char Buffer[16];
+
 				FScriptSetHelper ScriptSetHelper(SetProperty, SetProperty->ContainerPtrToValuePtr<void>(PropertyContainer));
 
 				ScriptSetHelper.EmptyElements(SetSize);
@@ -604,9 +624,11 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* Prop
 				{
 					const int32 Index = ScriptSetHelper.AddDefaultValue_Invalid_NeedsRehash();
 
+					FCStringAnsi::Snprintf(Buffer, sizeof(Buffer), "%d", Index);
+
 					bIsDataReadSuccessfully = ReadData
 					(
-						*FString::FromInt(i),
+						Buffer,
 						ScriptSetHelper.GetElementPtr(Index),
 						ScriptSetHelper.GetElementProperty(),
 						ObjectMap
@@ -626,10 +648,12 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* Prop
 		if (bIsDataReadSuccessfully)
 		{
 			int32 MapSize = 0;
-			ReadData(TEXT("MapSize"), MapSize);
+			ReadData("MapSize", MapSize);
 
 			if(MapSize >= 0)
 			{
+				char Buffer[32];
+
 				FScriptMapHelper ScriptMapHelper(MapProperty, MapProperty->ContainerPtrToValuePtr<void>(PropertyContainer));
 
 				ScriptMapHelper.EmptyValues(MapSize);
@@ -638,17 +662,19 @@ bool FLudeoReadableObject::ReadData(const TCHAR* AttributeName, const void* Prop
 				{
 					const int32 Index = ScriptMapHelper.AddDefaultValue_Invalid_NeedsRehash();
 
+					FCStringAnsi::Snprintf(Buffer, sizeof(Buffer), "Key_%d", Index),
 					bIsDataReadSuccessfully = bIsDataReadSuccessfully && ReadData
 					(
-						*FString::Printf(TEXT("Key_%d"), i),
+						Buffer,
 						ScriptMapHelper.GetKeyPtr(Index),
 						ScriptMapHelper.GetKeyProperty(),
 						ObjectMap
 					);
 
+					FCStringAnsi::Snprintf(Buffer, sizeof(Buffer), "Value_%d", Index),
 					bIsDataReadSuccessfully = bIsDataReadSuccessfully && ReadData
 					(
-						*FString::Printf(TEXT("Value_%d"), i),
+						Buffer,
 						ScriptMapHelper.GetValuePtr(Index),
 						ScriptMapHelper.GetValueProperty(),
 						ObjectMap
@@ -696,9 +722,13 @@ bool FLudeoReadableObject::InternalReadData
 
 		if (PropertyFilter.Match(*Property))
 		{
-			const FString PropertyName = Property->GetName();
+			const char* PropertyName = LUDEO_FNAME_TO_UTF8(Property->GetFName());
 
-			bIsAllDataReadSuccessfully = !ExistAttribute(*PropertyName) || ReadData(*PropertyName, StructureContainer, Property, ObjectMap);
+			bIsAllDataReadSuccessfully =
+			(
+				!ExistAttribute(PropertyName) ||
+				ReadData(PropertyName, StructureContainer, Property, ObjectMap)
+			);
 		}
 	}
 
