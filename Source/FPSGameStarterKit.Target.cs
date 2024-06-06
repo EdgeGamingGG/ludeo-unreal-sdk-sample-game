@@ -10,8 +10,6 @@ public class FPSGameStarterKitTarget : TargetRules
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 
-		bUseLoggingInShipping = true;
-
 		ExtraModuleNames.AddRange( new string[] { "FPSGameStarterKit" } );
 	}
 }
