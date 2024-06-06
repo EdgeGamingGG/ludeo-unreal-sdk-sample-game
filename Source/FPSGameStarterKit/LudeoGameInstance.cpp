@@ -352,24 +352,27 @@ bool ULudeoGameInstance::SetupLudeoSession(const FLudeoSessionOnActivatedDelegat
 						FParse::Value(FCommandLine::Get(), *AuthenticationIDKey, AuthenticationID);
 						FParse::Value(FCommandLine::Get(), *DisplayNameKey, DisplayName);
 
-						if (AuthenticationID.IsEmpty() || DisplayName.IsEmpty())
-						{
-							GConfig->GetString
-							(
-								TEXT("Ludeo.SessionActivate"),
-								*AuthenticationIDKey,
-								ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID,
-								GGameIni
-							);	
+						#if WITH_EDITOR
+							if (GIsEditor && (AuthenticationID.IsEmpty() || DisplayName.IsEmpty()))
+							{
+								
+								GConfig->GetString
+								(
+									TEXT("Ludeo.SessionActivate"),
+									*AuthenticationIDKey,
+									ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID,
+									GEditorIni
+								);	
 
-							GConfig->GetString
-							(
-								TEXT("Ludeo.SessionActivate"),
-								*DisplayNameKey,
-								ActivateSessionParameters.SteamAuthenticationDetails.DisplayName,
-								GGameIni
-							);
-						}
+								GConfig->GetString
+								(
+									TEXT("Ludeo.SessionActivate"),
+									*DisplayNameKey,
+									ActivateSessionParameters.SteamAuthenticationDetails.DisplayName,
+									GEditorIni
+								);
+							}
+						#endif
 					}
 				}
 			}
