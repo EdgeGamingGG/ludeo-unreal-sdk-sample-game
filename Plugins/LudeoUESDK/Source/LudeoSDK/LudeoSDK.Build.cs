@@ -4,7 +4,7 @@ using UnrealBuildTool;
 
 public class LudeoSDK : ModuleRules
 {
-	public virtual string SDKBaseDir
+	public string SDKBaseDir
 	{
 		get
 		{
@@ -12,7 +12,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual string SDKIncludeDir
+	public string SDKIncludeDir
 	{
 		get
 		{
@@ -20,7 +20,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual string SDKBinariesDir
+	public string SDKBinariesDir
 	{
 		get
 		{
@@ -28,7 +28,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual string SDKLibsDir
+	public string SDKLibsDir
 	{
 		get
 		{
@@ -36,7 +36,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual string SDKThirdPartyDir
+	public string SDKThirdPartyDir
 	{
 		get
 		{
@@ -44,7 +44,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual bool UseDebugSDK
+	public bool UseDebugSDK
 	{
 		get
 		{
@@ -57,26 +57,34 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public string LibraryLinkNameBase
+	public string LibraryConfiguration
 	{
 		get
 		{
 			if (UseDebugSDK)
 			{
-				return string.Format("LudeoSDK-{0}-Debug", Target.Platform.ToString());
+				return "Debug";
 			}
-			else if(Target.Configuration == UnrealTargetConfiguration.Development)
+			else if (Target.Configuration == UnrealTargetConfiguration.Development)
 			{
-				return string.Format("LudeoSDK-{0}-Development", Target.Platform.ToString());
+				return "Development";
 			}
 			else
 			{
-				return string.Format("LudeoSDK-{0}-Release", Target.Platform.ToString());
+				return "Release";
 			}
 		}
 	}
 
-	public virtual string StaticLibraryExtension
+	public string LibraryLinkNameBase
+	{
+		get
+		{
+			return string.Format("LudeoSDK-{0}-{1}", Target.Platform.ToString(), LibraryConfiguration);
+		}
+	}
+
+	public string StaticLibraryExtension
 	{
 		get
 		{
@@ -89,7 +97,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual string DynamicLibraryExtension
+	public string DynamicLibraryExtension
 	{
 		get
 		{
@@ -102,7 +110,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual string DynamicLibraryDebugSymbolExtension
+	public string DynamicLibraryDebugSymbolExtension
 	{
 		get
 		{
@@ -115,7 +123,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual string LibraryLinkName
+	public string LibraryLinkName
 	{
 		get
 		{
@@ -128,7 +136,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual string RuntimeLibraryFileName
+	public string RuntimeLibraryFileName
 	{
 		get
 		{
@@ -141,7 +149,7 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual string RuntimeLibraryDebugSymbolFileName
+	public string RuntimeLibraryDebugSymbolFileName
 	{
 		get
 		{
@@ -154,15 +162,6 @@ public class LudeoSDK : ModuleRules
 		}
 	}
 
-	public virtual bool bRequiresRuntimeLoad
-	{
-		get
-		{
-			return Target.Platform.IsInGroup(UnrealPlatformGroup.Windows) || Target.Platform == UnrealTargetPlatform.Mac;
-			// Other platforms may override this property.
-		}
-	}
-
 	public LudeoSDK(ReadOnlyTargetRules Target) : base(Target)
 	{
 		Type = ModuleType.External;
@@ -172,24 +171,18 @@ public class LudeoSDK : ModuleRules
 		PublicAdditionalLibraries.Add(LibraryLinkName);
 		RuntimeDependencies.Add
 		(
-			Path.Combine("$(TargetOutputDir)", RuntimeLibraryFileName),
+			Path.Combine("$(BinaryOutputDir)", RuntimeLibraryFileName),
 			Path.Combine(SDKBinariesDir, RuntimeLibraryFileName)
 		);
 		RuntimeDependencies.Add
 		(
-			Path.Combine("$(TargetOutputDir)", RuntimeLibraryDebugSymbolFileName),
+			Path.Combine("$(BinaryOutputDir)", RuntimeLibraryDebugSymbolFileName),
 			Path.Combine(SDKBinariesDir, RuntimeLibraryDebugSymbolFileName)
 		);
 
-		if (bRequiresRuntimeLoad)
-		{
-			PublicDelayLoadDLLs.Add(RuntimeLibraryFileName);
-			PublicDelayLoadDLLs.Add(RuntimeLibraryDebugSymbolFileName);
-		}
-
 		string[] BinaryFilePathCollection = Directory.GetFiles
 		(
-			Path.Combine(SDKBaseDir, "ThirdParty", Target.Platform.ToString()),
+			Path.Combine(SDKBaseDir, "ThirdParty", Target.Platform.ToString(), LibraryConfiguration),
 			"*.*",
 			SearchOption.AllDirectories
 		);
@@ -206,7 +199,7 @@ public class LudeoSDK : ModuleRules
 			{
 				RuntimeDependencies.Add
 				(
-					Path.Combine("$(TargetOutputDir)", Path.GetFileName(BinaryFilePath)),
+					Path.Combine("$(BinaryOutputDir)", Path.GetFileName(BinaryFilePath)),
 					BinaryFilePath
 				);
 			}
