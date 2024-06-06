@@ -1,6 +1,7 @@
 #include "LudeoPlayerController.h"
 
 #include "LudeoGameState.h"
+#include "LudeoCheatManager.h"
 
 ALudeoPlayerController::ALudeoPlayerController() :
 	Super(),
@@ -10,6 +11,8 @@ ALudeoPlayerController::ALudeoPlayerController() :
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
+
+	CheatClass = ULudeoCheatManager::StaticClass();
 }
 
 void ALudeoPlayerController::Tick(float DeltaSeconds)
