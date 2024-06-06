@@ -3,6 +3,8 @@
 #include "LudeoUESDK/LudeoManager/LudeoManager.h"
 #include "LudeoUESDK/LudeoCallback/LudeoCallbackManager.h"
 
+#include <Ludeo/Session.h>
+
 FLudeoSessionManager* FLudeoSessionManager::GetInstance()
 {
 	if (const TSharedPtr<FLudeoManager> LudeoManager = FLudeoManager::GetInstance().Pin())

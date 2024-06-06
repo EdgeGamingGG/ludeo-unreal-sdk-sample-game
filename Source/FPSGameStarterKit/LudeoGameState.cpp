@@ -74,7 +74,7 @@ void ALudeoGameState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if(LudeoGameSessionInitializationState == ELudeoGameSessionInitializationState::Succeeded)
+	if(LudeoGameSessionInitializationResult.IsSuccessful())
 	{
 		// For player that starts from the beginning
 		BeginGamePlay();
@@ -95,7 +95,7 @@ void ALudeoGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
-	if (LudeoGameSessionInitializationState == ELudeoGameSessionInitializationState::Succeeded)
+	if (LudeoGameSessionInitializationResult.IsSuccessful())
 	{
 		EndGamePlay();
 
@@ -215,9 +215,11 @@ bool ALudeoGameState::IsSessionReady() const
 	);
 }
 
-void ALudeoGameState::OnSessionReady(const bool bIsSuccessful)
+void ALudeoGameState::OnSessionReady(const FLudeoResult& Result)
 {
-	if (bIsSuccessful)
+	const bool bIsSuccessful = (Result.IsSuccessful() || Result == LudeoResult::SDKDisabled);
+
+	if (Result.IsSuccessful())
 	{
 		if (HasBegunPlay())
 		{
@@ -227,16 +229,21 @@ void ALudeoGameState::OnSessionReady(const bool bIsSuccessful)
 	}
 	else
 	{
-		ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
-		check(GameInstance != nullptr);
+		if(!bIsSuccessful)
+		{
+			ULudeoGameInstance* GameInstance = Cast<ULudeoGameInstance>(GetGameInstance());
+			check(GameInstance != nullptr);
 
-		GameInstance->DestoryLudeoSession(FOnLudeoSessionDestroyedDelegate::CreateUObject(this, &ALudeoGameState::OnLudeoSessionDestroyed));
+			GameInstance->DestoryLudeoSession(FOnLudeoSessionDestroyedDelegate::CreateUObject(this, &ALudeoGameState::OnLudeoSessionDestroyed));
 
-		LudeoSessionHandle = nullptr;
+			LudeoSessionHandle = nullptr;
+		}
+
 		LudeoRoomHandle = nullptr;
 		LudeoPlayerHandle = nullptr;
 	}
 
+	LudeoGameSessionInitializationResult = Result;
 	LudeoGameSessionInitializationState = (bIsSuccessful ? ELudeoGameSessionInitializationState::Succeeded : ELudeoGameSessionInitializationState::Failed);
 }
 
@@ -269,7 +276,7 @@ void ALudeoGameState::OnLudeoSessionActivated(const FLudeoResult& Result, const 
 	}
 	else
 	{
-		OnSessionReady(false);
+		OnSessionReady(Result);
 	}
 }
 
@@ -293,12 +300,12 @@ void ALudeoGameState::OnLudeoPlayerAdded(const FLudeoResult& Result, const FLude
 
 		if (LudeoRoomHandle != nullptr)
 		{
-			OnSessionReady(true);
+			OnSessionReady(Result);
 		}
 	}
 	else
 	{
-		OnSessionReady(false);
+		OnSessionReady(Result);
 	}
 }
 
@@ -329,7 +336,7 @@ void ALudeoGameState::OnLudeoRoomOpened(const FLudeoResult& Result, const FLudeo
 			ReplicatedLudeoRoomInformation.bIsRoomResultReady = true;
 		}
 
-		OnSessionReady(false);
+		OnSessionReady(Result);
 	}
 }
 
@@ -348,7 +355,7 @@ void ALudeoGameState::OnLudeoRoomReady(const FLudeoSessionHandle& SessionHandle,
 
 	if (LudeoPlayerHandle != nullptr)
 	{
-		OnSessionReady(true);
+		OnSessionReady(FLudeoResult::Success());
 	}
 }
 
@@ -414,7 +421,7 @@ void ALudeoGameState::OnRep_LudeoRoomInformation()
 			}
 			else
 			{
-				OnSessionReady(false);
+				OnSessionReady(ReplicatedLudeoRoomInformation.OpenRoomResult);
 			}
 		}
 	}
@@ -500,7 +507,7 @@ void ALudeoGameState::OpenRoom(const FString& RoomID, const FString& LudeoID)
 	}
 	else
 	{
-		OnSessionReady(false);
+		OnSessionReady(FLudeoResult::Failed());
 	}
 }
 

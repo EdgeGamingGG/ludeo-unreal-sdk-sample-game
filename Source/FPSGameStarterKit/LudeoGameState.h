@@ -116,7 +116,7 @@ private:
 
 	void TickSaveObjectState();
 
-	void OnSessionReady(const bool bIsSuccessful);
+	void OnSessionReady(const FLudeoResult& Result);
 
 private:
 	void OnLudeoSessionActivated(const FLudeoResult& Result, const FLudeoSessionHandle& SessionHandle, const bool bIsLudeoSelected);
@@ -153,6 +153,7 @@ private:
 		Succeeded,
 		Failed
 	} LudeoGameSessionInitializationState;
+	FLudeoResult LudeoGameSessionInitializationResult;
 
 private:
 	FDelegateHandle ActorSpawnedDelegateHandle;
