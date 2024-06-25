@@ -378,7 +378,10 @@ bool FLudeoWritableObjectWriteDataTest::RunTest(const FString& Parameters)
 		FTransform Transform;
 		FString String;
 		FName Name;
+		FText Text;
 		UClass* ObjectClass = AActor::StaticClass();
+		UObject* Object = nullptr;
+		FWeakObjectPtr WeakObjectPointer;
 
 		const FLudeoWritableObject WritableObject
 		(
@@ -408,8 +411,11 @@ bool FLudeoWritableObjectWriteDataTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Set String Data"),				WritableObject.WriteData("Bad Beef", *String));
 		TestTrue(TEXT("Set String Data"),				WritableObject.WriteData("Bad Beef", String));
 		TestTrue(TEXT("Set Name Data"),					WritableObject.WriteData("Bad Beef", Name));
+		TestTrue(TEXT("Set Text Data"),					WritableObject.WriteData("Bad Beef", Text));
 		TestTrue(TEXT("Set Class Data"),				WritableObject.WriteData("Bad Beef", ObjectClass));
 		TestTrue(TEXT("Set Ludeo Object Handle Data"),	WritableObject.WriteData("Bad Beef", reinterpret_cast<FLudeoObjectHandle&>(Data[0])));
+		TestTrue(TEXT("Set UObject Pointer Data"),		WritableObject.WriteData("Bad Beef", Object, {}));
+		TestTrue(TEXT("Set Weak Object Pointer Data"),	WritableObject.WriteData("Bad Beef", WeakObjectPointer, {}));
 	}
 
 	return (DetourFunction.IsDetoured() && !HasAnyErrors());

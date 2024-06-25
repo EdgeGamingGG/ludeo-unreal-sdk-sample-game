@@ -432,6 +432,23 @@ void FLudeoSession::SubscribeNotification()
 
 			NotificationIDCollection.Add(NotificationID);
 		}
+
+		// On Player Consent Updated
+		{
+			const LudeoSessionAddNotifyConsentUpdatedParams AddNotifyConsentUpdatedParams = Ludeo::create<LudeoSessionAddNotifyConsentUpdatedParams>();
+
+			const LudeoNotificationId NotificationID = ludeo_Session_AddNotifyConsentUpdated
+			(
+				SessionHandle,
+				&AddNotifyConsentUpdatedParams,
+				static_cast<LudeoHSession>(SessionHandle),
+				&FLudeoSession::StaticOnPlayerConsentUpdated
+			);
+
+			check(NotificationID != LUDEO_INVALID_NOTIFICATIONID);
+
+			NotificationIDCollection.Add(NotificationID);
+		}
 	}
 }
 
@@ -532,6 +549,29 @@ void FLudeoSession::StaticOnRoomReady(const LudeoSessionRoomReadyCallbackParams*
 void FLudeoSession::OnRoomReady(const LudeoSessionRoomReadyCallbackParams& RoomReadyCallbackParams) const
 {
 	OnRoomReadyDelegate.Broadcast(SessionHandle, RoomReadyCallbackParams.room);
+}
+
+void FLudeoSession::StaticOnPlayerConsentUpdated(const LudeoSessionConsentUpdatedCallbackParams* pConsentUpdatedCallbackParams)
+{
+	check(pConsentUpdatedCallbackParams != nullptr);
+	check(pConsentUpdatedCallbackParams->clientData != nullptr);
+
+	if (FLudeoSession* LudeoSession = FLudeoSession::GetSessionBySessionHandle(static_cast<LudeoHSession>(pConsentUpdatedCallbackParams->clientData)))
+	{
+		LudeoSession->OnPlayerConsentUpdated(*pConsentUpdatedCallbackParams);
+	}
+}
+
+void FLudeoSession::OnPlayerConsentUpdated(const LudeoSessionConsentUpdatedCallbackParams& ConsentUpdatedCallbackParams) const
+{
+	FLudeoSessionPlayerConsentData ConsentData;
+	ConsentData.bRemoteScreen			=	(ConsentUpdatedCallbackParams.remoteScreens == LUDEO_TRUE);
+	ConsentData.bReportMonitoring		=	(ConsentUpdatedCallbackParams.reportMonitor == LUDEO_TRUE);
+	ConsentData.bCaptureScreen			=	(ConsentUpdatedCallbackParams.captureScreen == LUDEO_TRUE);
+	ConsentData.bCaptureData			=	(ConsentUpdatedCallbackParams.captureData == LUDEO_TRUE);
+	ConsentData.bCanCaptureHighlight	=	(ConsentUpdatedCallbackParams.canCaptureHighlight == LUDEO_TRUE);
+
+	OnPlayerConsentUpdatedDelegate.Broadcast(SessionHandle, ConsentData);
 }
 
 FLudeoRoom* FLudeoSession::GetRoomByRoomHandle(const FLudeoRoomHandle& RoomHandle) const

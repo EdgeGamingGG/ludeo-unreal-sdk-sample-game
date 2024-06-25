@@ -50,6 +50,11 @@ public:
 		return OnRoomReadyDelegate;
 	}
 
+	FORCEINLINE FLudeoSessionOnPlayerConsentUpdatedMulticastDelegate& GetOnPlayerConsentUpdatedDelegate()
+	{
+		return OnPlayerConsentUpdatedDelegate;
+	}
+
 	void GetLudeo
 	(
 		const FLudeoSessionGetLudeoParameters& GetLudeoParameters,
@@ -108,6 +113,9 @@ private:
 	static void StaticOnRoomReady(const LudeoSessionRoomReadyCallbackParams* pRoomReadyCallbackParams);
 	void OnRoomReady(const LudeoSessionRoomReadyCallbackParams& RoomReadyCallbackParams) const;
 
+	static void StaticOnPlayerConsentUpdated(const LudeoSessionConsentUpdatedCallbackParams* pConsentUpdatedCallbackParams);
+	void OnPlayerConsentUpdated(const LudeoSessionConsentUpdatedCallbackParams& ConsentUpdatedCallbackParams) const;
+
 private:
 	FOnLudeoSessionDestroyedMulticastDelegate				OnDestroySessionDelegate;
 	FLudeoSessionOnLudeoSelectedMulticastDelegate			OnLudeoSelectedDelegate;
@@ -115,6 +123,7 @@ private:
 	FLudeoSessionOnResumeGameRequestedMulticastDelegate		OnResumeGameRequestedDelegate;
 	FLudeoSessionOnGameBackToMenuRequestedMulticastDelegate OnGameBackToMenuRequestedDelegate;
 	FLudeoSessionOnRoomReadyMulticastDelegate				OnRoomReadyDelegate;
+	FLudeoSessionOnPlayerConsentUpdatedMulticastDelegate	OnPlayerConsentUpdatedDelegate;
 
 private:
 	FLudeoSessionHandle SessionHandle;
@@ -122,5 +131,5 @@ private:
 private:
 	TArray<FLudeoRoom> RoomCollection;
 	TArray<FLudeo> LudeoCollection;
-	TArray<LudeoNotificationId, TInlineAllocator<5>> NotificationIDCollection;
+	TArray<LudeoNotificationId, TInlineAllocator<6>> NotificationIDCollection;
 };

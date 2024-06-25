@@ -33,11 +33,50 @@ private:
 	uint64 SessionHandle;
 };
 
+USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session User Consent Data"))
+struct FLudeoSessionPlayerConsentData
+{
+	GENERATED_BODY()
+
+	FLudeoSessionPlayerConsentData() :
+		bRemoteScreen(false),
+		bReportMonitoring(false),
+		bCaptureScreen(false),
+		bCaptureData(false),
+		bCanCaptureHighlight(false)
+	{
+
+	}
+
+	UPROPERTY(Transient, BlueprintReadOnly)
+	bool bRemoteScreen;
+
+	UPROPERTY(Transient, BlueprintReadOnly)
+	bool bReportMonitoring;
+
+	UPROPERTY(Transient, BlueprintReadOnly)
+	bool bCaptureScreen;
+
+	UPROPERTY(Transient, BlueprintReadOnly)
+	bool bCaptureData;
+
+	UPROPERTY(Transient, BlueprintReadOnly)
+	bool bCanCaptureHighlight;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams
 (
 	FOnLudeoSessionDestroyedDynamicMulticastDelegate,
 	const FLudeoResult&, Result,
 	const FLudeoSessionHandle&, SessionHandle
+);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
+(
+	FLudeoSessionOnActivatedDynamicMulticastDelegate,
+	const FLudeoResult&, Result,
+	const FLudeoSessionHandle&, SessionHandle,
+	const bool, bIsLudeoSelected
 );
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
@@ -64,21 +103,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
 	const FLudeoHandle&, LudeoHandle
 );
 
-DECLARE_DELEGATE_ThreeParams
-(
-	FLudeoSessionOnGetLudeoDelegate,
-	const FLudeoResult&,
-	const FLudeoSessionHandle&,
-	const FLudeoHandle&
-);
-
-DECLARE_MULTICAST_DELEGATE_TwoParams
-(
-	FLudeoSessionOnLudeoSelectedMulticastDelegate,
-	const FLudeoSessionHandle&,
-	const FString&
-);
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams
 (
 	FLudeoSessionNotificationDynamicMulticastDelegate,
@@ -100,6 +124,29 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
 	const FLudeoResult&, Result,
 	const FLudeoSessionHandle&, SessionHandle,
 	const FLudeoRoomHandle&, RoomHandle
+);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
+(
+	FLudeoSessionOnPlayerConsentUpdatedDynamicMulticastDelegate,
+	const FLudeoResult&, Result,
+	const FLudeoSessionHandle&, SessionHandle,
+	const FLudeoSessionPlayerConsentData&, PlayerConsentData
+);
+
+DECLARE_DELEGATE_ThreeParams
+(
+	FLudeoSessionOnGetLudeoDelegate,
+	const FLudeoResult&,
+	const FLudeoSessionHandle&,
+	const FLudeoHandle&
+);
+
+DECLARE_MULTICAST_DELEGATE_TwoParams
+(
+	FLudeoSessionOnLudeoSelectedMulticastDelegate,
+	const FLudeoSessionHandle&,
+	const FString&
 );
 
 DECLARE_MULTICAST_DELEGATE_OneParam
@@ -127,20 +174,19 @@ DECLARE_MULTICAST_DELEGATE_TwoParams
 	const FLudeoRoomHandle&
 );
 
+DECLARE_MULTICAST_DELEGATE_TwoParams
+(
+	FLudeoSessionOnPlayerConsentUpdatedMulticastDelegate,
+	const FLudeoSessionHandle&,
+	const FLudeoSessionPlayerConsentData&
+);
+
 DECLARE_DELEGATE_ThreeParams
 (
 	FLudeoSessionOnActivatedDelegate,
 	const FLudeoResult&,
 	const FLudeoSessionHandle&,
 	const bool
-);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams
-(
-	FLudeoSessionOnActivatedDynamicMulticastDelegate,
-	const FLudeoResult&, Result,
-	const FLudeoSessionHandle&, SessionHandle,
-	const bool, bIsLudeoSelected
 );
 
 DECLARE_DELEGATE_TwoParams
@@ -335,36 +381,6 @@ struct FLudeoSessionCloseRoomParameters
 
 USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Open Gallery Parameters"))
 struct FLudeoSessionOpenGalleryParameters
-{
-	GENERATED_BODY()
-};
-
-USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Subscribe To on Ludeo Selected Notification Parameters"))
-struct FLudeoSessionSubscribeToOnLudeoSelectedNotificationParameters
-{
-	GENERATED_BODY()
-};
-
-USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Subscribe to on Pause Game Requested Notification Parameters"))
-struct FLudeoSessionSubscribeToOnPauseGameRequestedNotificationParameters
-{
-	GENERATED_BODY()
-};
-
-USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Subscribe to on Resume Game Requested Notification Parameters"))
-struct FLudeoSessionSubscribeToOnResumeGameRequestedNotificationParameters
-{
-	GENERATED_BODY()
-};
-
-USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Subscribe to on Game Back to Main Menu Requested Notification Parameters"))
-struct FLudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationParameters
-{
-	GENERATED_BODY()
-};
-
-USTRUCT(BlueprintType, meta = (DisplayName = "Ludeo Session Subscribe to on Room Ready Notification Parameters"))
-struct FLudeoSessionSubscribeToOnRoomReadyNotificationParameters
 {
 	GENERATED_BODY()
 };

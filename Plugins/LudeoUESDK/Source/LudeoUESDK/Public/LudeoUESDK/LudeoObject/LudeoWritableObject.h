@@ -51,14 +51,11 @@ public:
 	bool WriteData(const char* AttributeName, const int16& Data) const;
 	bool WriteData(const char* AttributeName, const int32& Data) const;
 	bool WriteData(const char* AttributeName, const int64& Data) const;
-
 	bool WriteData(const char* AttributeName, const uint8& Data) const;
 	bool WriteData(const char* AttributeName, const uint16& Data) const;
 	bool WriteData(const char* AttributeName, const uint32& Data) const;
 	bool WriteData(const char* AttributeName, const uint64& Data) const;
-
 	bool WriteData(const char* AttributeName, const bool& Data) const;
-
 	bool WriteData(const char* AttributeName, const float& Data) const;
 	bool WriteData(const char* AttributeName, const double& Data) const;
 	bool WriteData(const char* AttributeName, const FVector2D& Data) const;
@@ -73,7 +70,6 @@ public:
 	bool WriteData(const char* AttributeName, const FName& Data) const;
 	bool WriteData(const char* AttributeName, const FText& Data) const;
 	bool WriteData(const char* AttributeName, UClass* Data) const;
-
 	bool WriteData(const char* AttributeName, const FLudeoObjectHandle& Data) const;
 	bool WriteData(const char* AttributeName, const UObject* Data, const WritableObjectMapType& ObjectMap) const;
 	bool WriteData(const char* AttributeName, const FWeakObjectPtr& Data, const WritableObjectMapType& ObjectMap) const;

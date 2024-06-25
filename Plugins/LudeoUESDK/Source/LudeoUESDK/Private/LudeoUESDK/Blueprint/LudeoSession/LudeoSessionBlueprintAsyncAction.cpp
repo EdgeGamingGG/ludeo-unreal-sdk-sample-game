@@ -85,13 +85,11 @@ void ULudeoSessionSubscribeNotificationAsyncNodeBase::OnLudeoSessionDestroyed(co
 ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode* ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode::SubscribeOnLudeoSelectedNotification
 (
 	UObject* WorldContextObject,
-	const FLudeoSessionHandle& InSessionHandle,
-	const FLudeoSessionSubscribeToOnLudeoSelectedNotificationParameters& InParameters
+	const FLudeoSessionHandle& InSessionHandle
 )
 {
 	ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode* AsyncNode = NewObject<ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode>(WorldContextObject);
 	AsyncNode->SessionHandle = InSessionHandle;
-	AsyncNode->Parameters = InParameters;
 
 	return AsyncNode;
 }
@@ -157,13 +155,11 @@ void ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode::OnLudeoSelect
 ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode* ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode::SubscribeToOnPauseGameRequestedNotification
 (
 	UObject* WorldContextObject,
-	const FLudeoSessionHandle& InSessionHandle,
-	const FLudeoSessionSubscribeToOnPauseGameRequestedNotificationParameters& InParameters
+	const FLudeoSessionHandle& InSessionHandle
 )
 {
 	ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode* AsyncNode = NewObject<ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode>(WorldContextObject);
 	AsyncNode->SessionHandle = InSessionHandle;
-	AsyncNode->Parameters = InParameters;
 
 	return AsyncNode;
 }
@@ -224,13 +220,11 @@ void ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode::OnPauseG
 ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode* ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode::SubscribeToOnResumeGameRequestedNotification
 (
 	UObject* WorldContextObject,
-	const FLudeoSessionHandle& InSessionHandle,
-	const FLudeoSessionSubscribeToOnResumeGameRequestedNotificationParameters& InParameters
+	const FLudeoSessionHandle& InSessionHandle
 )
 {
 	ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode* AsyncNode = NewObject<ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode>(WorldContextObject);
 	AsyncNode->SessionHandle = InSessionHandle;
-	AsyncNode->Parameters = InParameters;
 
 	return AsyncNode;
 }
@@ -291,13 +285,11 @@ void ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode::OnResum
 ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode* ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode::SubscribeToOnGameBackToMainMenuRequestedNotification
 (
 	UObject* WorldContextObject,
-	const FLudeoSessionHandle& InSessionHandle,
-	const FLudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationParameters& InParameters
+	const FLudeoSessionHandle& InSessionHandle
 )
 {
 	ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode* AsyncNode = NewObject<ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode>(WorldContextObject);
 	AsyncNode->SessionHandle = InSessionHandle;
-	AsyncNode->Parameters = InParameters;
 
 	return AsyncNode;
 }
@@ -358,13 +350,11 @@ void ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode:
 ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode* ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode::SubscribeToOnRoomReadyNotification
 (
 	UObject* WorldContextObject,
-	const FLudeoSessionHandle& InSessionHandle,
-	const FLudeoSessionSubscribeToOnRoomReadyNotificationParameters& InParameters
+	const FLudeoSessionHandle& InSessionHandle
 )
 {
 	ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode* AsyncNode = NewObject<ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode>(WorldContextObject);
 	AsyncNode->SessionHandle = InSessionHandle;
-	AsyncNode->Parameters = InParameters;
 
 	return AsyncNode;
 }
@@ -421,6 +411,72 @@ void ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode::OnRoomReady
 	);
 
 	OnRoomReadyDelegate.Broadcast(LudeoResult::Success, InSessionHandle, InRoomHandle);
+}
+
+ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode* ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode::SubscribeToOnPlayerConsentUpdatedNotification
+(
+	UObject* WorldContextObject,
+	const FLudeoSessionHandle& InSessionHandle
+)
+{
+	ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode* AsyncNode = NewObject<ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode>(WorldContextObject);
+	AsyncNode->SessionHandle = InSessionHandle;
+
+	return AsyncNode;
+}
+
+void ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode::Activate()
+{
+	UKismetSystemLibrary::PrintString
+	(
+		this,
+		TEXT("[Ludeo Session] Subscribing to on player consent updated notification..."),
+		true,
+		true,
+		FLinearColor(0.0, 0.66, 1.0), 5.0f
+	);
+
+	Super::Activate();
+
+	if (FLudeoSession* Session = FLudeoSession::GetSessionBySessionHandle(SessionHandle))
+	{
+		Session->GetOnPlayerConsentUpdatedDelegate().AddUObject(this, &ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode::OnPlayerConsentUpdated);
+
+		OnSuccessDelegate.Broadcast(LudeoResult::Success, SessionHandle, {});
+	}
+	else
+	{
+		OnFailDelegate.Broadcast(LudeoResult::InvalidParameters, SessionHandle, {});
+	}
+}
+
+void ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode::OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle)
+{
+	Super::OnLudeoSessionDestroyed(Result, InSessionHandle);
+
+	if (Result.IsSuccessful())
+	{
+		OnFailDelegate.Broadcast(LudeoResult::Canceled, SessionHandle, {});
+	}
+}
+
+void ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode::OnPlayerConsentUpdated
+(
+	const FLudeoSessionHandle& InSessionHandle,
+	const FLudeoSessionPlayerConsentData& InPlayerConsentData
+)
+{
+	UKismetSystemLibrary::PrintString
+	(
+		this,
+		TEXT("[Ludeo Session] On player consent updated notification"),
+		true,
+		true,
+		FLinearColor(0.0, 0.66, 1.0),
+		5.0f
+	);
+
+	OnPlayerConsentUpdatedDelegate.Broadcast(LudeoResult::Success, InSessionHandle, InPlayerConsentData);
 }
 
 ULudeoSessionActivateSessionAsyncNode* ULudeoSessionActivateSessionAsyncNode::ActivateSession

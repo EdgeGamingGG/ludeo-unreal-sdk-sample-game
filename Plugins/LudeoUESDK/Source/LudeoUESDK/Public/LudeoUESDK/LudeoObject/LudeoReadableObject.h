@@ -47,14 +47,11 @@ public:
 	bool ReadData(const char* AttributeName, int16& Data) const;
 	bool ReadData(const char* AttributeName, int32& Data) const;
 	bool ReadData(const char* AttributeName, int64& Data) const;
-
 	bool ReadData(const char* AttributeName, uint8& Data) const;
 	bool ReadData(const char* AttributeName, uint16& Data) const;
 	bool ReadData(const char* AttributeName, uint32& Data) const;
 	bool ReadData(const char* AttributeName, uint64& Data) const;
-
 	bool ReadData(const char* AttributeName, bool& Data) const;
-
 	bool ReadData(const char* AttributeName, float& Data) const;
 	bool ReadData(const char* AttributeName, double& Data) const;
 	bool ReadData(const char* AttributeName, FVector2D& Data) const;

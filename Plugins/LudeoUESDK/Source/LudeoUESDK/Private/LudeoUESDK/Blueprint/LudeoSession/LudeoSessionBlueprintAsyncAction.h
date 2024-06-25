@@ -92,8 +92,7 @@ public:
 	static ULudeoSessionSubscribeToOnLudeoSelectedNotificationAsyncNode* SubscribeOnLudeoSelectedNotification
 	(
 		UObject* WorldContextObject,
-		const FLudeoSessionHandle& InSessionHandle,
-		const FLudeoSessionSubscribeToOnLudeoSelectedNotificationParameters& InParameters
+		const FLudeoSessionHandle& InSessionHandle
 	);
 
 	virtual void Activate() override;
@@ -101,9 +100,6 @@ public:
 private:
 	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnLudeoSelected(const FLudeoSessionHandle& InSessionHandle, const FString& LudeoID);
-
-private:
-	FLudeoSessionSubscribeToOnLudeoSelectedNotificationParameters Parameters;
 };
 
 UCLASS()
@@ -136,8 +132,7 @@ public:
 	static ULudeoSessionSubscribeToOnPauseGameRequestedNotificationAsyncNode* SubscribeToOnPauseGameRequestedNotification
 	(
 		UObject* WorldContextObject,
-		const FLudeoSessionHandle& InSessionHandle,
-		const FLudeoSessionSubscribeToOnPauseGameRequestedNotificationParameters& InParameters
+		const FLudeoSessionHandle& InSessionHandle
 	);
 
 	virtual void Activate() override;
@@ -145,9 +140,6 @@ public:
 private:
 	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnPauseGameRequested(const FLudeoSessionHandle& InSessionHandle);
-
-private:
-	FLudeoSessionSubscribeToOnPauseGameRequestedNotificationParameters Parameters;
 };
 
 UCLASS()
@@ -180,8 +172,7 @@ public:
 	static ULudeoSessionSubscribeToOnResumeGameRequestedNotificationAsyncNode* SubscribeToOnResumeGameRequestedNotification
 	(
 		UObject* WorldContextObject,
-		const FLudeoSessionHandle& InSessionHandle,
-		const FLudeoSessionSubscribeToOnResumeGameRequestedNotificationParameters& InParameters
+		const FLudeoSessionHandle& InSessionHandle
 	);
 
 	virtual void Activate() override;
@@ -189,9 +180,6 @@ public:
 private:
 	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnResumeGameRequested(const FLudeoSessionHandle& InSessionHandle);
-
-private:
-	FLudeoSessionSubscribeToOnResumeGameRequestedNotificationParameters Parameters;
 };
 
 UCLASS()
@@ -215,7 +203,7 @@ public:
 		meta =
 		(
 			Category = "Ludeo Session",
-			DisplayName = "Ludeo Session Subscribe to On Resume Game Requested Notification",
+			DisplayName = "Ludeo Session Subscribe to On Game back to Main Menu Requested Notification",
 			BlueprintInternalUseOnly = "true",
 			DefaultToSelf = "WorldContextObject",
 			HidePin = "WorldContextObject"
@@ -224,8 +212,7 @@ public:
 	static ULudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationAsyncNode* SubscribeToOnGameBackToMainMenuRequestedNotification
 	(
 		UObject* WorldContextObject,
-		const FLudeoSessionHandle& InSessionHandle,
-		const FLudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationParameters& InParameters
+		const FLudeoSessionHandle& InSessionHandle
 	);
 
 	virtual void Activate() override;
@@ -233,9 +220,6 @@ public:
 private:
 	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnGameBackToMainMenuRequested(const FLudeoSessionHandle& InSessionHandle);
-
-private:
-	FLudeoSessionSubscribeToOnGameBackToMainMenuRequestedNotificationParameters Parameters;
 };
 
 UCLASS()
@@ -259,7 +243,7 @@ public:
 		meta =
 		(
 			Category = "Ludeo Session",
-			DisplayName = "Ludeo Session Subscribe to On Resume Game Requested Notification",
+			DisplayName = "Ludeo Session Subscribe to On Room Ready Notification",
 			BlueprintInternalUseOnly = "true",
 			DefaultToSelf = "WorldContextObject",
 			HidePin = "WorldContextObject"
@@ -268,8 +252,7 @@ public:
 	static ULudeoSessionSubscribeToOnRoomReadyNotificationAsyncNode* SubscribeToOnRoomReadyNotification
 	(
 		UObject* WorldContextObject,
-		const FLudeoSessionHandle& InSessionHandle,
-		const FLudeoSessionSubscribeToOnRoomReadyNotificationParameters& InParameters
+		const FLudeoSessionHandle& InSessionHandle
 	);
 
 	virtual void Activate() override;
@@ -277,9 +260,46 @@ public:
 private:
 	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
 	void OnRoomReady(const FLudeoSessionHandle& InSessionHandle, const FLudeoRoomHandle& InRoomHandle);
+};
+
+UCLASS()
+class LUDEOUESDK_API ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode : public ULudeoSessionSubscribeNotificationAsyncNodeBase
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "On Success"))
+	FLudeoSessionOnPlayerConsentUpdatedDynamicMulticastDelegate OnSuccessDelegate;
+
+	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "On Fail"))
+	FLudeoSessionOnPlayerConsentUpdatedDynamicMulticastDelegate OnFailDelegate;
+
+	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "On Pause Game Requested"))
+	FLudeoSessionOnPlayerConsentUpdatedDynamicMulticastDelegate OnPlayerConsentUpdatedDelegate;
+
+	UFUNCTION
+	(
+		BlueprintCallable,
+		meta =
+		(
+			Category = "Ludeo Session",
+			DisplayName = "Ludeo Session Subscribe to On Player Consent Updated Notification",
+			BlueprintInternalUseOnly = "true",
+			DefaultToSelf = "WorldContextObject",
+			HidePin = "WorldContextObject"
+		)
+	)
+	static ULudeoSessionSubscribeToOnPlayerConsentUpdatedNotificationAsyncNode* SubscribeToOnPlayerConsentUpdatedNotification
+	(
+		UObject* WorldContextObject,
+		const FLudeoSessionHandle& InSessionHandle
+	);
+
+	virtual void Activate() override;
 
 private:
-	FLudeoSessionSubscribeToOnRoomReadyNotificationParameters Parameters;
+	virtual void OnLudeoSessionDestroyed(const FLudeoResult& Result, const FLudeoSessionHandle& InSessionHandle) override;
+	void OnPlayerConsentUpdated(const FLudeoSessionHandle& InSessionHandle, const FLudeoSessionPlayerConsentData& InPlayerConsentData);
 };
 
 UCLASS()

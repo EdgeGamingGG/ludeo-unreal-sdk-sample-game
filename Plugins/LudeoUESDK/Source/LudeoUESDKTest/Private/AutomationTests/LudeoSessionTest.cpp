@@ -228,6 +228,14 @@ bool FLudeoSessionActivateTest::RunTest(const FString& Parameters)
 		),
 		SETUP_DETOUR_FUNCTION
 		(
+			ludeo_Session_AddNotifyConsentUpdated,
+			[](...)
+			{
+				return static_cast<LudeoNotificationId>(0xBadBeef);
+			}
+		),
+		SETUP_DETOUR_FUNCTION
+		(
 			ludeo_Session_Release,
 			[](LudeoHSession, const LudeoSessionReleaseParams*, void* ClientData, LudeoSessionReleaseCallback Callback)
 			{
