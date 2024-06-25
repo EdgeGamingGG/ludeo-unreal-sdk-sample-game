@@ -98,12 +98,6 @@ LUDEO_STRUCT(LudeoSteamAuthDetails, (
 	 */
 	const char* authId;
 
-	/**
-	 * Steam user displayName
-	 * You can retrieve this with Steamworks's SteamFriends()->GetPersonaName()
-	 */
-	 const char* displayName;
-
 	 /**
 	  * Steam beta branch
 	  * You can retrieve this with Steamworks's SteamApps()->GetCurrentBetaName()
@@ -354,6 +348,42 @@ LUDEO_STRUCT(LudeoSessionRoomReadyCallbackParams, (
 
 LUDEO_DECLARE_CALLBACK(LudeoSessionRoomReadyCallback, const LudeoSessionRoomReadyCallbackParams* data);
 
+/** The most recent version of the ludeo_Session_AddNotifyRoomReady API */
+#define LUDEO_SESSION_ADDNOTIFYCONSENTUPDATED_API_LATEST 1
+
+/** The parameters to ludeo_Session_AddNotifyConsentUpdated */
+LUDEO_STRUCT(LudeoSessionAddNotifyConsentUpdatedParams, (
+	/** Set this to LUDEO_SESSION_ADDNOTIFYCONSENTUPDATED_API_LATEST */
+	int32_t apiVersion;
+));
+
+/**
+ * Structure with the parameters passed to the ConsentUpdated callback
+ * See ludeo_Session_AddNotifyConsentUpdated for more details.
+ */
+LUDEO_STRUCT(LudeoSessionConsentUpdatedCallbackParams, (
+
+	/** Context that was passed to ludeo_Session_AddNotifyConsentUpdated */
+	void *clientData;
+
+	/** Flag indicates if remote screens are enabled */
+	LudeoBool remoteScreens;
+
+	/** Flag indicates if monitoring data are reported */
+	LudeoBool reportMonitor;
+
+	/** Flag indicates if screen is captured */
+	LudeoBool captureScreen;
+
+	/** Flag indicates if gameplay data can be streamed to room */
+	LudeoBool captureData;
+
+	/** Flag indicates if highlight can be captured */
+	LudeoBool canCaptureHighlight;
+));
+
+LUDEO_DECLARE_CALLBACK(LudeoSessionConsentUpdatedCallback, const LudeoSessionConsentUpdatedCallbackParams* data);
+
 //
 // ludeo_Session_GetLudeo related types
 //
@@ -419,7 +449,11 @@ LUDEO_STRUCT(LudeoSessionOpenRoomParams, (
 
 /** The parameters to the ludeo_Session_OpenRoom callback */
 LUDEO_STRUCT(LudeoSessionOpenRoomCallbackParams, (
-	/** Tells if the operation succeeded or failed. */
+
+	/**
+	 * Tells if the operation succeeded or failed.
+	 * If this is LudeoResult::SDKDisabled, the player hasn't consented yet to the required SDK features, such as data capturing.
+	 */
 	LudeoResult resultCode;
 
 	/** Context that was passed to the originating SDK call */

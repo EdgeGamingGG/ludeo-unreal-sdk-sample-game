@@ -168,12 +168,11 @@ void FLudeoSession::Activate
 	InternalSessionActivateParams.windowHandle = ActivateSessionParameters.GameWindowHandle;
 	InternalSessionActivateParams.reset = static_cast<LudeoBool>(ActivateSessionParameters.bResetAttributeAndAction);
 
-	LudeoSteamAuthDetails SteamAuthDetails;
+	LudeoSteamAuthDetails SteamAuthDetails{};
 
 	if(
 		ActivateSessionParameters.AuthenticationType == ELudeoSessionAuthenticationType::Steam &&
-		!ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID.IsEmpty() &&
-		!ActivateSessionParameters.SteamAuthenticationDetails.DisplayName.IsEmpty()
+		!ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID.IsEmpty()
 	)
 	{
 		const FTCHARToUTF8 SteamAuthenticationIDStringConverter
@@ -182,22 +181,14 @@ void FLudeoSession::Activate
 			ActivateSessionParameters.SteamAuthenticationDetails.AuthenticationID.GetCharArray().Num()
 		);
 
-		const FTCHARToUTF8 SteamDisplayNameStringConverter
-		(
-			ActivateSessionParameters.SteamAuthenticationDetails.DisplayName.GetCharArray().GetData(),
-			ActivateSessionParameters.SteamAuthenticationDetails.DisplayName.GetCharArray().Num()
-		);
-
 		const FTCHARToUTF8 SteamBetaBranchStringConverter
 		(
 			ActivateSessionParameters.SteamAuthenticationDetails.BetaBranchName.GetCharArray().GetData(),
 			ActivateSessionParameters.SteamAuthenticationDetails.BetaBranchName.GetCharArray().Num()
 		);
 
-		
 		SteamAuthDetails.authType = LudeoAuthType::Steam;
 		SteamAuthDetails.authId = SteamAuthenticationIDStringConverter.Get();
-		SteamAuthDetails.displayName = SteamDisplayNameStringConverter.Get();
 		SteamAuthDetails.currentBetaName = SteamBetaBranchStringConverter.Get();
 
 		InternalSessionActivateParams.authDetails = &SteamAuthDetails;

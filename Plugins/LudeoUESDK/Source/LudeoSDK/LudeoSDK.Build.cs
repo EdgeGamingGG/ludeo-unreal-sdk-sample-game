@@ -190,7 +190,7 @@ public class LudeoSDK : ModuleRules
 		foreach (string BinaryFilePath in BinaryFilePathCollection)
 		{
 			string Extension = Path.GetExtension(BinaryFilePath).ToLower();
-
+			
 			if (Extension == StaticLibraryExtension)
 			{
 				PublicAdditionalLibraries.Add(BinaryFilePath);

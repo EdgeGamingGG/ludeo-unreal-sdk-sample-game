@@ -1,6 +1,7 @@
 #include "LudeoUESDK/LudeoObject/LudeoWritableObject.h"
 
 #include "GameFramework/PlayerState.h"
+#include "Engine/UserDefinedStruct.h"
 
 #include <Ludeo/DataWriter.h>
 #include <Ludeo/Utils.h>
@@ -213,13 +214,27 @@ bool FLudeoWritableObject::InternalWriteData
 
 		if (bShouldWriteData)
 		{
-			bIsAllDataWrittenSuccessfully = WriteData
-			(
-				LUDEO_FNAME_TO_UTF8(Property->GetFName()),
-				StructureContainer,
-				Property,
-				ObjectMap
-			);
+			// Blueprint structure
+			if (StructureType->IsA(UUserDefinedStruct::StaticClass()))
+			{
+				bIsAllDataWrittenSuccessfully = WriteData
+				(
+					LUDEO_FSTRING_TO_UTF8(StructureType->GetAuthoredNameForField(Property)),
+					StructureContainer,
+					Property,
+					ObjectMap
+				);
+			}
+			else
+			{
+				bIsAllDataWrittenSuccessfully = WriteData
+				(
+					LUDEO_FNAME_TO_UTF8(Property->GetFName()),
+					StructureContainer,
+					Property,
+					ObjectMap
+				);
+			}
 		}
 	}
 
@@ -438,7 +453,8 @@ bool FLudeoWritableObject::WriteData
 	const FLudeoObjectPropertyFilter& PropertyFilter
 ) const
 {
-	const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject, false> EnterComponentGuard(*this, AttributeName);
+	const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject> EnterComponentGuard(*this, AttributeName);
+	check(EnterComponentGuard.HasEnteredComponent());
 
 	if(EnterComponentGuard.HasEnteredComponent())
 	{
@@ -594,11 +610,10 @@ bool FLudeoWritableObject::WriteData
 
 		if(ScriptArrayHelper.Num() > 0)
 		{
-			const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject, false> EnterComponentGuard(*this, AttributeName);
+			const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject> EnterComponentGuard(*this, AttributeName);
+			check(EnterComponentGuard.HasEnteredComponent());
 
-			bIsDataWrittenSuccessfully = EnterComponentGuard.HasEnteredComponent();
-
-			if(bIsDataWrittenSuccessfully)
+			if(EnterComponentGuard.HasEnteredComponent())
 			{
 				bIsDataWrittenSuccessfully = WriteData("ArraySize", ScriptArrayHelper.Num());
 
@@ -627,11 +642,10 @@ bool FLudeoWritableObject::WriteData
 
 		if(ScriptSetHelper.Num() > 0)
 		{
-			const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject, false> EnterComponentGuard(*this, AttributeName);
+			const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject> EnterComponentGuard(*this, AttributeName);
+			check(EnterComponentGuard.HasEnteredComponent());
 
-			bIsDataWrittenSuccessfully = EnterComponentGuard.HasEnteredComponent();
-
-			if (bIsDataWrittenSuccessfully)
+			if (EnterComponentGuard.HasEnteredComponent())
 			{
 				bIsDataWrittenSuccessfully = WriteData("SetSize", ScriptSetHelper.Num());
 
@@ -666,11 +680,10 @@ bool FLudeoWritableObject::WriteData
 
 		if(ScriptMapHelper.Num() > 0)
 		{
-			const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject, false> EnterComponentGuard(*this, AttributeName);
+			const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoWritableObject> EnterComponentGuard(*this, AttributeName);
+			check(EnterComponentGuard.HasEnteredComponent());
 
-			bIsDataWrittenSuccessfully = EnterComponentGuard.HasEnteredComponent();
-
-			if (bIsDataWrittenSuccessfully)
+			if (EnterComponentGuard.HasEnteredComponent())
 			{
 				bIsDataWrittenSuccessfully = WriteData("MapSize", ScriptMapHelper.Num());
 

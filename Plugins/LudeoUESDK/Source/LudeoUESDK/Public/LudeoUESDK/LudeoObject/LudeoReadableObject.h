@@ -9,6 +9,7 @@ class LUDEOUESDK_API FLudeoReadableObject : public FLudeoObject
 {
 public:
 	typedef TMap<FLudeoReadableObject, UObject*> ReadableObjectMapType;
+	typedef TFunction<bool(const uint32 NumberOfAttribute, const char* AttributeName, const LudeoDataType DataType)> IteratePredicateType;
 
 public:
 	FLudeoReadableObject(const FLudeoObjectHandle InObjectHandle, const FLudeoHandle& InLudeoHandle);
@@ -29,11 +30,17 @@ public:
 	// Check if an attribute exists
 	bool ExistAttribute(const char* AttributeName) const;
 
+	// Get data type of an attribute
+	TOptionalWithLudeoResult<LudeoDataType> GetAttributeDataType(const char* AttributeName) const;
+
+	// Iterate attributes in the current context
+	TOptionalWithLudeoResult<uint32> Iterate(const IteratePredicateType& Predicate) const;
+
 	bool ReadData
 	(
 		const UObject* Data,
 		const ReadableObjectMapType& ObjectMap,
-		const FLudeoObjectPropertyFilter& PropertyFilter = FLudeoObjectPropertyFilter()
+		const TOptional<FLudeoObjectPropertyFilter>& PropertyFilter
 	) const;
 
 	bool ReadData(const char* AttributeName, int8& Data) const;
@@ -71,7 +78,7 @@ public:
 		const UStruct* StructureType,
 		void* Structure,
 		const ReadableObjectMapType& ObjectMap,
-		const FLudeoObjectPropertyFilter& PropertyFilter = FLudeoObjectPropertyFilter()
+		const TOptional<FLudeoObjectPropertyFilter>& PropertyFilter
 	) const;
 
 	bool ReadData
@@ -79,7 +86,8 @@ public:
 		const char* AttributeName,
 		const void* PropertyContainer,
 		const FProperty* Property,
-		const ReadableObjectMapType& ObjectMap
+		const ReadableObjectMapType& ObjectMap,
+		const TOptional<FLudeoObjectPropertyFilter>& PropertyFilter
 	) const;
 
 private:
@@ -88,8 +96,10 @@ private:
 		const UStruct* StructureType,
 		void* StructureContainer,
 		const ReadableObjectMapType& ObjectMap,
-		const FLudeoObjectPropertyFilter& PropertyFilter
+		const TOptional<FLudeoObjectPropertyFilter>& PropertyFilter
 	) const;
+
+	bool IsPropertyMatchingDataType(const FProperty* Property, const LudeoDataType DataType) const;
 
 private:
 	FLudeoHandle LudeoHandle;

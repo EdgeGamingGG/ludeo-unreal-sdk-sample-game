@@ -226,9 +226,6 @@ struct FLudeoSessionSteamAuthenticationDetails
 	FString AuthenticationID;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FString DisplayName;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FString BetaBranchName;
 };
 

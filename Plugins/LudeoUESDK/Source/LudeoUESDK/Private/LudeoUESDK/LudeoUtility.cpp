@@ -21,6 +21,8 @@ const char* FLudeoUtility::FastConvertAttributeFNameToCString(const FName& Name)
 		);
 
 		TArray<char>& CString = Dictionary.Add(Name);
+		CString.Reserve(Converter.Length() + 1);
+
 		CString.Append(Converter.Get(), Converter.Length());
 		CString.Add('\0');
 

@@ -29,7 +29,7 @@ private:
 	bool bHasEnteredObject;
 };
 
-template<typename Type, bool bCanEnterComponentCallFail>
+template<typename Type>
 struct FScopedLudeoDataReadWriteEnterComponentGuard
 {
 	template<typename... ParameterPackType>
@@ -37,7 +37,6 @@ struct FScopedLudeoDataReadWriteEnterComponentGuard
 		Instance(InInstance)
 	{
 		bHasEnteredComponent = Instance.EnterComponent(Forward<ParameterPackType>(ParameterPack)...);
-		check(bCanEnterComponentCallFail || bHasEnteredComponent);
 	}
 
 	~FScopedLudeoDataReadWriteEnterComponentGuard()

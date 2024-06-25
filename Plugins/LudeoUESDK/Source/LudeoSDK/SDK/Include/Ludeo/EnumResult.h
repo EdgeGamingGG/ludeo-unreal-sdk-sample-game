@@ -43,13 +43,10 @@ LUDEO_LIST_VALUE(Unknown, 6)
 LUDEO_LIST_VALUE(WrongState, 7)
 
 /**
- * The SDK was disabled by the backend
- * 
- * To allow disabling the use of the SDK without shipping a new game, the SDK can be disabled by the backend. This can be useful
- * if problems are found after a game ships.
  *
- * Whenever a session creation or ongoing session fails with this error, the client should stop further attempts to create
- * sessions.
+ * The SDK was disabled by the backend, or the specific feature the client is trying to use is not permitted due to user consent
+ * restrictions.
+ * 
  */
 LUDEO_LIST_VALUE(SDKDisabled, 8)
 
@@ -76,8 +73,8 @@ LUDEO_LIST_VALUE(WrongType, 12)
 
 /**
  * The call failed because the SDK encountered invalid data.
- * A situation this can happen is if the SDK ludeo data from the backend that is invalid somehow. E.g, problems related to the
- * data and object types the client previously registered.
+ * A situation like this can happen if the SDK receives ludeo data from the backend that is invalid somehow. E.g, problems related
+ * to the data and object types the client previously registered.
  */
 LUDEO_LIST_VALUE_LAST(InvalidData, 13)
 

@@ -100,6 +100,30 @@ LUDEO_STRUCT(LudeoDataReaderGetObjectsInfoParams, (
 	int32_t apiVersion;
 ));
 
+/** The most recent version of the ludeo_DataReader_VisitAttributes API */
+#define LUDEO_DATAREADER_VISITATTRIBUTES_API_LATEST 1
+
+LUDEO_STRUCT(LudeoDataReaderVisitAttributesParams, (
+	/** Set this to LUDEO_DATAREADER_VISITATTRIBUTES_API_LATEST */
+	int32_t apiVersion;
+));
+
+/** The parameters to the callback specified in ludeo_DataReader_VisitAttributes*/
+LUDEO_STRUCT(LudeoDataReaderVisitAttributesCallbackParams, (
+	/** Context that was passed to the originating SDK call */
+	void* clientData;
+	
+	/** Attribute name */
+	const char* name;
+
+	/**
+	 * Type of attribute.
+	 * If type is LudeoDataType::Component, the client can do a call to `ludeo_DataReader_EnterComponent`, visit the attributes inside that component, and afterwards call `ludeo_DataReader_LeaveComponent`. This allows the client to recursively visit all attributes.
+	 */
+	LudeoDataType type;
+));
+
+LUDEO_DECLARE_CALLBACK_RETVALUE(LudeoBool, LudeoDataReaderVisitAttributesCallback, const LudeoDataReaderVisitAttributesCallbackParams* data);
 
 // #ROOMS : Revise/removed this after the Room refactor
 #if 0

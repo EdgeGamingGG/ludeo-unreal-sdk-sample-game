@@ -895,8 +895,6 @@ bool FLudeoObjectStateManager::RestoreWorld
 			return SaveGameSpecification.DefaultSubObjectSaveGameData.SubObjectFilter.ObjectPropertyFilter;
 		}();
 
-		const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(ReadableObject);
-
 		bIsAllDataReadSuccessfully = ReadableObject.ReadData(Object, CurrentObjectMap, PropertyFilter);
 	}
 

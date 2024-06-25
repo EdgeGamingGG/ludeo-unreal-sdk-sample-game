@@ -158,27 +158,99 @@ bool FLudeoReadableObject::LeaveComponent() const
 	return false;
 }
 
-bool FLudeoReadableObject::ExistAttribute(const char* AttributeName) const
+TOptionalWithLudeoResult<LudeoDataType> FLudeoReadableObject::GetAttributeDataType(const char* AttributeName) const
 {
-	bool bAttributeExists = false;
+	LudeoDataType DataType = static_cast<LudeoDataType>(TNumericLimits<int32>::Max());
 
-	const FLudeoResult Result = ConditionalDataReaderSetCurrent(LudeoHandle);
+	FLudeoResult Result = ConditionalDataReaderSetCurrent(LudeoHandle);
 
 	if (Result.IsSuccessful())
 	{
-		uint32_t DataByteSize = 0;
-
-		bAttributeExists = (ludeo_DataReader_GetSize(AttributeName, &DataByteSize) == LUDEO_TRUE);
+		const bool bAttributeExists = (ludeo_DataReader_AttributeExists(AttributeName, &DataType) == LUDEO_TRUE);
 
 		if(!bAttributeExists)
 		{
-			const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject, true> EnterComponentGuard(*this, AttributeName);
-
-			bAttributeExists = EnterComponentGuard.HasEnteredComponent();
+			Result = LudeoResult::NotFound;
 		}
 	}
 
-	return bAttributeExists;
+	return TOptionalWithLudeoResult<LudeoDataType>(Result, DataType);
+}
+
+bool FLudeoReadableObject::ExistAttribute(const char* AttributeName) const
+{
+	return GetAttributeDataType(AttributeName).IsSuccessful();
+}
+
+TOptionalWithLudeoResult<uint32> FLudeoReadableObject::Iterate(const IteratePredicateType& Predicate) const
+{
+	struct VisitAttributesUserCallbackData
+	{
+		VisitAttributesUserCallbackData(const IteratePredicateType& Predicate) :
+			Predicate(Predicate), NumberOfAttribute(0)
+		{
+
+		}
+
+		const IteratePredicateType& Predicate;
+		uint32 NumberOfAttribute;
+
+	} UserCallbackData(Predicate);
+
+	FLudeoResult Result = ConditionalDataReaderSetCurrent(LudeoHandle);
+
+	if (Result.IsSuccessful())
+	{
+		const LudeoDataReaderVisitAttributesParams VisitAttributesParams = Ludeo::create<LudeoDataReaderVisitAttributesParams>();
+
+		if(UserCallbackData.Predicate)
+		{
+			Result = ludeo_DataReader_VisitAttributes
+			(
+				&VisitAttributesParams,
+				&UserCallbackData.NumberOfAttribute,
+				&UserCallbackData,
+				[](const LudeoDataReaderVisitAttributesCallbackParams* CallbackParameter)
+				{
+					check(CallbackParameter != nullptr);
+
+					if (CallbackParameter != nullptr)
+					{
+						if (VisitAttributesUserCallbackData* pUserCallbackData = static_cast<VisitAttributesUserCallbackData*>(CallbackParameter->clientData))
+						{
+							VisitAttributesUserCallbackData& UserCallbackData = *pUserCallbackData;
+
+							if (UserCallbackData.Predicate)
+							{
+								const bool bContinue = UserCallbackData.Predicate
+								(
+									UserCallbackData.NumberOfAttribute,
+									CallbackParameter->name,
+									CallbackParameter->type
+								);
+
+								return (bContinue ? LUDEO_TRUE : LUDEO_FALSE);
+							}
+						}
+					}
+
+					return LUDEO_FALSE;
+				}
+			);
+		}
+		else
+		{
+			Result = ludeo_DataReader_VisitAttributes
+			(
+				&VisitAttributesParams,
+				&UserCallbackData.NumberOfAttribute,
+				nullptr,
+				nullptr
+			);
+		}
+	}
+
+	return TOptionalWithLudeoResult<uint32>(Result, UserCallbackData.NumberOfAttribute);
 }
 
 bool FLudeoReadableObject::ReadData(const char* AttributeName, int8& Data) const
@@ -238,32 +310,32 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, double& Data) con
 
 bool FLudeoReadableObject::ReadData(const char* AttributeName, FVector2D& Data) const
 {
-	return ReadData(AttributeName, FLudeoVector2D::StaticStruct()->GetSuperStruct(), &Data, {});
+	return ReadData(AttributeName, FLudeoVector2D::StaticStruct()->GetSuperStruct(), &Data, {}, {});
 }
 
 bool FLudeoReadableObject::ReadData(const char* AttributeName, FVector& Data) const
 {
-	return ReadData(AttributeName, FLudeoVector::StaticStruct()->GetSuperStruct(), &Data, {});
+	return ReadData(AttributeName, FLudeoVector::StaticStruct()->GetSuperStruct(), &Data, {}, {});
 }
 
 bool FLudeoReadableObject::ReadData(const char* AttributeName, FVector4& Data) const
 {
-	return ReadData(AttributeName, FLudeoVector4::StaticStruct()->GetSuperStruct(), &Data, {});
+	return ReadData(AttributeName, FLudeoVector4::StaticStruct()->GetSuperStruct(), &Data, {}, {});
 }
 
 bool FLudeoReadableObject::ReadData(const char* AttributeName, FRotator& Data) const
 {
-	return ReadData(AttributeName, FLudeoRotator::StaticStruct()->GetSuperStruct(), &Data, {});
+	return ReadData(AttributeName, FLudeoRotator::StaticStruct()->GetSuperStruct(), &Data, {}, {});
 }
 
 bool FLudeoReadableObject::ReadData(const char* AttributeName, FQuat& Data) const
 {
-	return ReadData(AttributeName, FLudeoQuaterion::StaticStruct()->GetSuperStruct(), &Data, {});
+	return ReadData(AttributeName, FLudeoQuaterion::StaticStruct()->GetSuperStruct(), &Data, {}, {});
 }
 
 bool FLudeoReadableObject::ReadData(const char* AttributeName, FTransform& Data) const
 {
-	return ReadData(AttributeName, FLudeoTransform::StaticStruct()->GetSuperStruct(), &Data, {});
+	return ReadData(AttributeName, FLudeoTransform::StaticStruct()->GetSuperStruct(), &Data, {}, {});
 }
 
 bool FLudeoReadableObject::ReadData(const char* AttributeName, FString& Data) const
@@ -289,7 +361,7 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, FText& Data) cons
 {
 	FLudeoText LudeoText;
 
-	const bool bHasReadData = ReadData(AttributeName, FLudeoText::StaticStruct(), &LudeoText, {});
+	const bool bHasReadData = ReadData(AttributeName, FLudeoText::StaticStruct(), &LudeoText, {}, {});
 
 	if (bHasReadData)
 	{
@@ -412,14 +484,15 @@ bool FLudeoReadableObject::ReadData
 	const UStruct* StructureType,
 	void* Structure,
 	const ReadableObjectMapType& ObjectMap,
-	const FLudeoObjectPropertyFilter& PropertyFilter
+	const TOptional<FLudeoObjectPropertyFilter>& PropertyFilter
 ) const
 {
-	const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject, true> EnterComponentGuard
+	const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject> EnterComponentGuard
 	(
 		*this,
 		AttributeName
 	);
+	check(EnterComponentGuard.HasEnteredComponent());
 
 	if(EnterComponentGuard.HasEnteredComponent())
 	{
@@ -429,7 +502,14 @@ bool FLudeoReadableObject::ReadData
 	return false;
 }
 
-bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* PropertyContainer, const FProperty* Property, const ReadableObjectMapType& ObjectMap) const
+bool FLudeoReadableObject::ReadData
+(
+	const char* AttributeName,
+	const void* PropertyContainer,
+	const FProperty* Property,
+	const ReadableObjectMapType& ObjectMap,
+	const TOptional<FLudeoObjectPropertyFilter>& PropertyFilter
+) const
 {
 	check(PropertyContainer != nullptr);
 	check(Property != nullptr);
@@ -443,7 +523,8 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* Prope
 			AttributeName,
 			EnumProperty->ContainerPtrToValuePtr<void>(PropertyContainer),
 			EnumProperty->GetUnderlyingProperty(),
-			ObjectMap
+			ObjectMap,
+			PropertyFilter
 		);
 	}
 	else if (const FInt8Property* Int8Property = CastField<FInt8Property>(Property))
@@ -553,7 +634,8 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* Prope
 			AttributeName,
 			StructProperty->Struct,
 			StructProperty->ContainerPtrToValuePtr<void>(const_cast<void*>(PropertyContainer)),
-			ObjectMap
+			ObjectMap,
+			PropertyFilter
 		);
 	}
 	else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
@@ -570,12 +652,13 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* Prope
 	}
 	else if (const FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
 	{
-		const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject, true> EnterComponentGuard(*this, AttributeName);
+		const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject> EnterComponentGuard(*this, AttributeName);
+		check(EnterComponentGuard.HasEnteredComponent());
 
-		bIsDataReadSuccessfully = EnterComponentGuard.HasEnteredComponent();
-
-		if(bIsDataReadSuccessfully)
+		if(EnterComponentGuard.HasEnteredComponent())
 		{
+			bIsDataReadSuccessfully = true;
+
 			int32 ArraySize = 0;
 			ReadData("ArraySize", ArraySize);
 
@@ -598,7 +681,8 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* Prope
 						Buffer,
 						ScriptArrayHelper.GetRawPtr(Index),
 						ArrayProperty->Inner,
-						ObjectMap
+						ObjectMap,
+						PropertyFilter
 					);
 				}
 			}
@@ -606,12 +690,13 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* Prope
 	}
 	else if (const FSetProperty* SetProperty = CastField<FSetProperty>(Property))
 	{
-		const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject, true> EnterComponentGuard(*this, AttributeName);
+		const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject> EnterComponentGuard(*this, AttributeName);
+		check(EnterComponentGuard.HasEnteredComponent());
 
-		bIsDataReadSuccessfully = EnterComponentGuard.HasEnteredComponent();
-
-		if (bIsDataReadSuccessfully)
+		if (EnterComponentGuard.HasEnteredComponent())
 		{
+			bIsDataReadSuccessfully = true;
+
 			int32 SetSize = 0;		
 			ReadData("SetSize", SetSize);
 
@@ -634,7 +719,8 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* Prope
 						Buffer,
 						ScriptSetHelper.GetElementPtr(Index),
 						ScriptSetHelper.GetElementProperty(),
-						ObjectMap
+						ObjectMap,
+						PropertyFilter
 					);
 				}
 
@@ -644,11 +730,10 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* Prope
 	}
 	else if (const FMapProperty* MapProperty = CastField<FMapProperty>(Property))
 	{
-		const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject, true> EnterComponentGuard(*this, AttributeName);
+		const FScopedLudeoDataReadWriteEnterComponentGuard<FLudeoReadableObject> EnterComponentGuard(*this, AttributeName);
+		check(EnterComponentGuard.HasEnteredComponent());
 
-		bIsDataReadSuccessfully = EnterComponentGuard.HasEnteredComponent();
-
-		if (bIsDataReadSuccessfully)
+		if (EnterComponentGuard.HasEnteredComponent())
 		{
 			int32 MapSize = 0;
 			ReadData("MapSize", MapSize);
@@ -671,7 +756,8 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* Prope
 						Buffer,
 						ScriptMapHelper.GetKeyPtr(Index),
 						ScriptMapHelper.GetKeyProperty(),
-						ObjectMap
+						ObjectMap,
+						PropertyFilter
 					);
 
 					FCStringAnsi::Snprintf(Buffer, sizeof(Buffer), "Value_%d", Index),
@@ -680,7 +766,8 @@ bool FLudeoReadableObject::ReadData(const char* AttributeName, const void* Prope
 						Buffer,
 						ScriptMapHelper.GetValuePtr(Index),
 						ScriptMapHelper.GetValueProperty(),
-						ObjectMap
+						ObjectMap,
+						PropertyFilter
 					);
 				}
 
@@ -700,14 +787,20 @@ bool FLudeoReadableObject::ReadData
 (
 	const UObject* Data,
 	const ReadableObjectMapType& ObjectMap,
-	const FLudeoObjectPropertyFilter& PropertyFilter
+	const TOptional<FLudeoObjectPropertyFilter>& PropertyFilter
 ) const
 {
 	SCOPE_CYCLE_COUNTER(STAT_ReadObject);
 
 	if(Data != nullptr)
 	{
-		return InternalReadData(Data->GetClass(), const_cast<UObject*>(Data), ObjectMap, PropertyFilter);
+		const FScopedLudeoDataReadWriteEnterObjectGuard<FLudeoReadableObject> EnterObjectGuard(*this);
+		check(EnterObjectGuard.HasEnteredObject());
+
+		if(EnterObjectGuard.HasEnteredObject())
+		{
+			return InternalReadData(Data->GetClass(), const_cast<UObject*>(Data), ObjectMap, PropertyFilter);
+		}
 	}
 
 	return false;
@@ -718,27 +811,189 @@ bool FLudeoReadableObject::InternalReadData
 	const UStruct* StructureType,
 	void* StructureContainer,
 	const ReadableObjectMapType& ObjectMap,
-	const FLudeoObjectPropertyFilter& PropertyFilter
+	const TOptional<FLudeoObjectPropertyFilter>& PropertyFilter
 ) const
 {
-	bool bIsAllDataReadSuccessfully = true;
+	const auto GetStructureTypeName = [&]()
+	{
+		#if WITH_EDITOR
+			return UWorld::RemovePIEPrefix(StructureType->GetPathName());
+		#else
+			return StructureType->GetPathName();
+		#endif
+	};
 
-	for (TFieldIterator<FProperty> PropertyIterator(StructureType); (bIsAllDataReadSuccessfully && PropertyIterator); ++PropertyIterator)
+#if !UE_BUILD_SHIPPING
+	for (TFieldIterator<FProperty> PropertyIterator(StructureType); PropertyIterator; ++PropertyIterator)
 	{
 		const FProperty* Property = *PropertyIterator;
 		check(Property != nullptr);
 
-		if (PropertyFilter.Match(*Property))
+		if (!PropertyFilter.IsSet() || PropertyFilter.GetValue().Match(*Property))
 		{
-			const char* PropertyName = LUDEO_FNAME_TO_UTF8(Property->GetFName());
+			const FString PropertyName = StructureType->GetAuthoredNameForField(Property);
 
-			bIsAllDataReadSuccessfully =
-			(
-				!ExistAttribute(PropertyName) ||
-				ReadData(PropertyName, StructureContainer, Property, ObjectMap)
-			);
+			if (!ExistAttribute(LUDEO_FSTRING_TO_UTF8(PropertyName)))
+			{
+				UE_LOG
+				(
+					LogLudeo,
+					Log,
+					TEXT(R"(Property "%s" matches the property filter but does not exist in the Ludeo data in the structure %s)"),
+					*PropertyName,
+					*GetStructureTypeName()
+				);
+			}
 		}
 	}
+#endif
 
-	return bIsAllDataReadSuccessfully;
+	bool bIsAllDataReadSuccessfully = true;
+
+	const TOptionalWithLudeoResult<uint32> Result = Iterate([&](const uint32 NumberOfAttribute, const char* AttributeName, const LudeoDataType DataType)
+	{
+		if (const FProperty* Property = StructureType->FindPropertyByName(FName(UTF8_TO_TCHAR(AttributeName))))
+		{
+			if (IsPropertyMatchingDataType(Property, DataType))
+			{
+				if (!PropertyFilter.IsSet() || PropertyFilter.GetValue().Match(*Property))
+				{
+					bIsAllDataReadSuccessfully = ReadData(AttributeName, StructureContainer, Property, ObjectMap, PropertyFilter) && bIsAllDataReadSuccessfully;
+				}
+				else
+				{
+					UE_LOG
+					(
+						LogLudeo,
+						Log,
+						TEXT(R"(Attribute "%s" exists in Ludeo but does not match the property filter)"),
+						UTF8_TO_TCHAR(AttributeName)
+					);
+				}	
+			}
+			else
+			{
+				ensure(false);
+
+				UE_LOG
+				(
+					LogLudeo,
+					Warning,
+					TEXT(R"(Attribute "%s" exists in Ludeo but does not match the type "%s" found in the structure %s)"),
+					UTF8_TO_TCHAR(AttributeName),
+					*Property->GetCPPType(),
+					*GetStructureTypeName()
+				);
+			}
+		}
+		else
+		{
+			UE_LOG
+			(
+				LogLudeo,
+				Log,
+				TEXT(R"(Attribute "%s" exists in Ludeo but does not find in the structure %s)"),
+				UTF8_TO_TCHAR(AttributeName),
+				*GetStructureTypeName()
+			);
+		}
+
+		return true;
+	});
+
+	return (Result.IsSuccessful() && bIsAllDataReadSuccessfully);
+}
+
+bool FLudeoReadableObject::IsPropertyMatchingDataType(const FProperty* Property, const LudeoDataType DataType) const
+{
+	if (const FEnumProperty* EnumProperty = CastField<FEnumProperty>(Property))
+	{
+		return IsPropertyMatchingDataType(EnumProperty->GetUnderlyingProperty(), DataType);
+	}
+	else if (const FInt8Property* Int8Property = CastField<FInt8Property>(Property))
+	{
+		return (DataType == LudeoDataType::Int8);
+	}
+	else if (const FInt16Property* Int16Property = CastField<FInt16Property>(Property))
+	{
+		return (DataType == LudeoDataType::Int16);
+	}
+	else if (const FIntProperty* Int32Property = CastField<FIntProperty>(Property))
+	{
+		return (DataType == LudeoDataType::Int32);
+	}
+	else if (const FInt64Property* Int64Property = CastField<FInt64Property>(Property))
+	{
+		return (DataType == LudeoDataType::Int64);
+	}
+	else if (const FByteProperty* ByteProperty = CastField<FByteProperty>(Property))
+	{
+		return (DataType == LudeoDataType::UInt8);
+	}
+	else if (const FUInt16Property* UInt16Property = CastField<FUInt16Property>(Property))
+	{
+		return (DataType == LudeoDataType::UInt16);
+	}
+	else if (const FUInt32Property* UInt32Property = CastField<FUInt32Property>(Property))
+	{
+		return (DataType == LudeoDataType::UInt32);
+	}
+	else if (const FUInt64Property* UInt64Property = CastField<FUInt64Property>(Property))
+	{
+		return (DataType == LudeoDataType::UInt64);
+	}
+	else if (const FBoolProperty* BoolProperty = CastField<FBoolProperty>(Property))
+	{
+		return (DataType == LudeoDataType::Bool);
+	}
+	else if (const FFloatProperty* FloatProperty = CastField<FFloatProperty>(Property))
+	{
+		return (DataType == LudeoDataType::Float);
+	}
+	else if (const FDoubleProperty* DoubleProperty = CastField<FDoubleProperty>(Property))
+	{
+		return (DataType == LudeoDataType::Double);
+	}
+	else if (const FStrProperty* StringProperty = CastField<FStrProperty>(Property))
+	{
+		return (DataType == LudeoDataType::String);
+	}
+	else if (const FNameProperty* NameProperty = CastField<FNameProperty>(Property))
+	{
+		return (DataType == LudeoDataType::String);
+	}
+	else if (const FTextProperty* TextProperty = CastField<FTextProperty>(Property))
+	{
+		return (DataType == LudeoDataType::Component);
+	}
+	else if (const FClassProperty* ClassProperty = CastField<FClassProperty>(Property))
+	{
+		return (DataType == LudeoDataType::String);
+	}
+	else if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+	{
+		return (DataType == LudeoDataType::Component);
+	}
+	else if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+	{
+		return (DataType == LudeoDataType::UInt32);
+	}
+	else if (const FWeakObjectProperty* WeakObjectProperty = CastField<FWeakObjectProperty>(Property))
+	{
+		return (DataType == LudeoDataType::UInt32);
+	}
+	else if (const FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
+	{
+		return (DataType == LudeoDataType::Component);
+	}
+	else if (const FSetProperty* SetProperty = CastField<FSetProperty>(Property))
+	{
+		return (DataType == LudeoDataType::Component);
+	}
+	else if (const FMapProperty* MapProperty = CastField<FMapProperty>(Property))
+	{
+		return (DataType == LudeoDataType::Component);
+	}
+	
+	return false;
 }

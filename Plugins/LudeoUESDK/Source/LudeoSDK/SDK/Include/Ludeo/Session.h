@@ -165,6 +165,10 @@ LUDEO_DEFINE_FUNC_TRAITS_ADDNOTIFY(Session, SESSION, AddNotifyBackToMenuRequest,
 LUDEO_DECLARE_FUNC(LudeoNotificationId) ludeo_Session_AddNotifyRoomReady(LudeoHSession handle, const LudeoSessionAddNotifyRoomReadyParams* params, void* clientData, LudeoSessionRoomReadyCallback callback);
 LUDEO_DEFINE_FUNC_TRAITS_ADDNOTIFY(Session, SESSION, AddNotifyRoomReady, ADDNOTIFYROOMREADY, RoomReady);
 
+// #RVF : Document this
+LUDEO_DECLARE_FUNC(LudeoNotificationId) ludeo_Session_AddNotifyConsentUpdated(LudeoHSession handle, const LudeoSessionAddNotifyConsentUpdatedParams* params, void* clientData, LudeoSessionConsentUpdatedCallback callback);
+LUDEO_DEFINE_FUNC_TRAITS_ADDNOTIFY(Session, SESSION, AddNotifyConsentUpdated, ADDNOTIFYCONSENTUPDATED, ConsentUpdated);
+
 // #ROOMS : Remove this once refactoring is done
 
 /**

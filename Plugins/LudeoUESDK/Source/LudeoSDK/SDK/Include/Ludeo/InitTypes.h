@@ -62,7 +62,7 @@ LUDEO_ENUM_START(LudeoLogCategory)
 	LUDEO_ENUM_VALUE(LudeoLogCategory, Http, 2)
 
 	/**
-	 * Log category for writing and reading gameplaydata
+	 * Log category for writing and reading gameplay data
 	 */
 	LUDEO_ENUM_VALUE(LudeoLogCategory, Data, 3)
 
@@ -80,6 +80,12 @@ LUDEO_ENUM_START(LudeoLogCategory)
 	 * Log category for the logging coming from Coherent's gameface
 	 */
 	LUDEO_ENUM_VALUE(LudeoLogCategory, Coherent, 6)
+
+	/**
+	 * Log category for the logging related to video encoding
+	 */
+	LUDEO_ENUM_VALUE(LudeoLogCategory, VideoEncoding, 7)
+
 
 	/** Not a real category. This is a special value that can be passed to ludeo_setLoggingLevel */
 	LUDEO_ENUM_VALUE_LAST(LudeoLogCategory, All, 0x7FFFFFFF)

@@ -106,6 +106,33 @@ LUDEO_DECLARE_FUNC(LudeoBool) ludeo_DataReader_LeaveObject();
 LUDEO_DECLARE_FUNC(LudeoBool) ludeo_DataReader_EnterComponent(const char* name);
 LUDEO_DECLARE_FUNC(LudeoBool) ludeo_DataReader_LeaveComponent();
 
+
+/**
+ * Checks if an attribute exists in the current context.
+ *
+ * @param attributeName Attribute to search for.
+ * @param outType If not null, on return it will contain the attribute type. If nulled, then the function simply checks if the attribute exists
+ *
+ * @return True if the attribute was found, in which case outType will have the type on exit, if not nulled.
+ */
+LUDEO_DECLARE_FUNC(LudeoBool) ludeo_DataReader_AttributeExists(const char* attributeName, LudeoDataType* outType);
+
+/**
+ * Visits all attributes in the current context.
+ *
+ * @param params Struct with any parameters to the function
+ * @param clientData Context that will be passed to the callback. Can be nulled.
+ * @param callback The visit function. This will be called for every attribute found in the current context. It will be called for
+ *  components too, but not for the component's attributes. Can be nulled, in which case the function call is used just to count
+ *  the number of attributes.
+ * @param outCount If the result is successful and this is not nulled, on exit it will contain the number of attributes for the
+ *  current context
+ * @return True if the current context is valid to visit attributes, false otherwise
+ *
+ */
+LUDEO_DECLARE_FUNC(LudeoResult) ludeo_DataReader_VisitAttributes(const LudeoDataReaderVisitAttributesParams* params, uint32_t* outCount, void* clientData, LudeoDataReaderVisitAttributesCallback callback);
+LUDEO_DEFINE_FUNC_TRAITS_WITHCALLBACK_2(DataReader, DATAREADER, VisitAttributes, VISITATTRIBUTES);
+
 /**
  * Looks for the specified attribute in the current context and returns its size in bytes.
  *
@@ -157,7 +184,7 @@ LUDEO_DECLARE_FUNC(LudeoBool) ludeo_DataReader_GetDouble(const char* attributeNa
  * 
  * IMPORTANT: The NULL character is NOT copied, and it's the client's responsability to correctly terminate the string.
  * When reading strings, the client should first do a call to ludeo_DataReader_GetSize to get the string size and make sure the
- * buffer provided to ludeo_DataReader_GetString is big enough. After the ludeo_DataReader_SetString, the client can then null
+ * buffer provided to ludeo_DataReader_GetString is big enough. After the ludeo_DataReader_GetString, the client can then null
  * terminate the string since it knows the size.
  */
 LUDEO_DECLARE_FUNC(LudeoBool) ludeo_DataReader_GetString(const char* attributeName, char* outValue);

@@ -106,6 +106,10 @@ LUDEO_DECLARE_FUNC(void) ludeo_RemoveNotification(LudeoNotificationId notificati
 
 /**
  * 
+ * This function should typically not be used for shipping.
+ * It allows tweaking some of the SDK internals to help debug issues.
+ * A client should NOT rely on any of these command to be available with newer versions of the SDK.
+ * 
  * Available commands
  *
  *  "overlay-enabled"
@@ -118,7 +122,7 @@ LUDEO_DECLARE_FUNC(void) ludeo_RemoveNotification(LudeoNotificationId notificati
  *			1 (default) - Overlay will be enabled
  *		Example:
  *			ludeo_Command("overlay-enabled", "0");
- *
+ * 
  * "monitor-enabled"
  *		Description:
  *			The SDK monitors some performance related stats such as FPS and frametime variance and sends them to the backend at
@@ -128,7 +132,36 @@ LUDEO_DECLARE_FUNC(void) ludeo_RemoveNotification(LudeoNotificationId notificati
  *			It should be called before ludeo_Initialize.
  *		Value:
  *			0 - Disable monitoring.
- *			1 - Doesn't do anything, since monitoring is only enabled if the backend tells the SDK to enable it.
+ *			1 - (default) Doesn't do anything, since monitoring is only enabled if the backend tells the SDK to enable it.
+ *
+ *  "video-enabled"
+ *		Description:
+ *			Allows the client to disable recording. This can be used during debug
+ *			This should be called before ludeo_Initialize.
+ *		Value:
+ *			0 - Video recording will be disabled
+ *			1 (default) - Video recording will be enabled
+ *		Example:
+ *			ludeo_Command("video-enabled", "0");
+ *
+ * "video-localsave"
+ *		Description:
+ *			If set to true, it will cause videos to be saved locally as a raw h264 file before uploading. The videos will be saved
+ *			as LudeoVideoMessage-<UTC TIMESTAMP>.h264 files in the current working directory.
+ *			Note that this should ONLY be used for debugging.
+ *			This can be called at any time, and the change will affect any videos created after the command.
+ *		Value:
+ *			0 - (default) Videos are not saved to files
+ *			1 - Videos are saved to files before uploading
+ *
+ * "video-swencoder"
+ *		Description:
+ *			Typically, the SDK tries to use any supported hardware encoders, and the software encoder is the fallback encoder.
+ *			Setting this to true forces the use of the software encoder.
+ *			It should be called before ludeo_Initialize
+ *		Value:
+ *			0 - (default) Will use an hardware encoder if available
+ *			1 - Will use the software encoder.
  */
 LUDEO_DECLARE_FUNC(LudeoResult) ludeo_Command(const char* name, const char* value);
 

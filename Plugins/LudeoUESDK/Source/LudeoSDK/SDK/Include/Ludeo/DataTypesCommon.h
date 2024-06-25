@@ -64,7 +64,12 @@ LUDEO_ENUM_START(LudeoDataType)
 	 *
 	 * 4 x 32-bits floating point
 	 */
-	LUDEO_ENUM_VALUE_LAST(LudeoDataType, Vec4Float, 13)
+	LUDEO_ENUM_VALUE(LudeoDataType, Vec4Float, 13)
+
+	/**
+	 * A component (Data Structure)
+	 */
+	LUDEO_ENUM_VALUE(LudeoDataType, Component, 100)
 
 LUDEO_ENUM_END(LudeoDataType);
 

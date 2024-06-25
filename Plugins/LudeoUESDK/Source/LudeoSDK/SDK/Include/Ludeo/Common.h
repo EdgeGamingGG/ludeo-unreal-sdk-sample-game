@@ -121,19 +121,20 @@
 
 #ifdef __cplusplus
 	// std::function style signature for a callback
-	#define LUDEO_DECLARE_CALLBACK_CPP(CallbackName, ...) \
-		using LUDEO_CONCATENATE(CallbackName, Cpp) = std::function<void(__VA_ARGS__)>;
+	#define LUDEO_DECLARE_CALLBACK_CPP(ReturnType, CallbackName, ...) \
+		using LUDEO_CONCATENATE(CallbackName, Cpp) = std::function<ReturnType(__VA_ARGS__)>;
 #else
-	#define LUDEO_DECLARE_CALLBACK_CPP(CallbackName, ...)
+	#define LUDEO_DECLARE_CALLBACK_CPP(ReturnType, CallbackName, ...)
 #endif
 
 
 #define LUDEO_DECLARE_CALLBACK(CallbackName, ...)                  \
 	EXTERN_C typedef void(LUDEO_CALL * CallbackName)(__VA_ARGS__); \
-	LUDEO_DECLARE_CALLBACK_CPP(CallbackName, __VA_ARGS__)
+	LUDEO_DECLARE_CALLBACK_CPP(void, CallbackName, __VA_ARGS__)
 
-#define LUDEO_DECLARE_CALLBACK_RETVALUE(ReturnType, CallbackName, ...) \
-	EXTERN_C typedef ReturnType(LUDEO_CALL* CallbackName)(__VA_ARGS__)
+#define LUDEO_DECLARE_CALLBACK_RETVALUE(ReturnType, CallbackName, ...)  \
+	EXTERN_C typedef ReturnType(LUDEO_CALL* CallbackName)(__VA_ARGS__); \
+	LUDEO_DECLARE_CALLBACK_CPP(ReturnType, CallbackName, __VA_ARGS__)
 
 #define LUDEO_PASTE(...) __VA_ARGS__
 #define LUDEO_STRUCT(StructName, StructDef)  \
